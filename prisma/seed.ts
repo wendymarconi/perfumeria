@@ -5,7 +5,9 @@ const prisma = new PrismaClient();
 async function main() {
     console.log("Seeding database...");
 
-    // Clear existing data
+    // Clear existing data (in correct order for foreign keys)
+    await prisma.orderItem.deleteMany();
+    await prisma.order.deleteMany();
     await prisma.variant.deleteMany();
     await prisma.perfume.deleteMany();
 
@@ -21,9 +23,9 @@ async function main() {
             images: "[]",
             variants: {
                 create: [
-                    { size: "5ml", price: 25.0, stock: true },
-                    { size: "10ml", price: 45.0, stock: true },
-                    { size: "100ml", price: 350.0, stock: false },
+                    { size: "5ml", price: 25.0, stock: 10 },
+                    { size: "10ml", price: 45.0, stock: 8 },
+                    { size: "100ml", price: 350.0, stock: 0 },
                 ],
             },
         },
@@ -38,9 +40,9 @@ async function main() {
             images: "[]",
             variants: {
                 create: [
-                    { size: "5ml", price: 30.0, stock: true },
-                    { size: "10ml", price: 55.0, stock: true },
-                    { size: "50ml", price: 280.0, stock: true },
+                    { size: "5ml", price: 30.0, stock: 12 },
+                    { size: "10ml", price: 55.0, stock: 6 },
+                    { size: "50ml", price: 280.0, stock: 3 },
                 ],
             },
         },
@@ -55,9 +57,9 @@ async function main() {
             images: "[]",
             variants: {
                 create: [
-                    { size: "5ml", price: 20.0, stock: true },
-                    { size: "10ml", price: 38.0, stock: true },
-                    { size: "125ml", price: 230.0, stock: true },
+                    { size: "5ml", price: 20.0, stock: 15 },
+                    { size: "10ml", price: 38.0, stock: 9 },
+                    { size: "125ml", price: 230.0, stock: 5 },
                 ],
             },
         },
