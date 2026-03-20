@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
-import { Clock, CheckCircle2, Truck, XCircle, ChevronRight, Package, ShoppingCart, Edit2, Save, Trash2, Camera } from 'lucide-react';
+import { Clock, CheckCircle2, Truck, XCircle, Package, ShoppingCart, Edit2, Save, Camera } from 'lucide-react';
 import { getOrders, updateOrderStatus, getAdminProducts, updateProduct, updateVariant, createProduct } from '@/lib/actions';
 import { formatPrice } from '@/lib/formatters';
 
