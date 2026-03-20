@@ -8,6 +8,8 @@ import { formatPrice } from '@/lib/formatters';
 
 export default function AdminPage() {
     const [activeTab, setActiveTab] = useState<'orders' | 'inventory' | 'create'>('orders');
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [passwordInput, setPasswordInput] = useState('');
     const [orders, setOrders] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -103,7 +105,33 @@ export default function AdminPage() {
             default: return null;
         }
     };
-
+    if (!isAuthenticated) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center p-6">
+                <div className="bg-card p-10 border border-border/20 max-w-md w-full glass">
+                    <h2 className="text-2xl font-serif text-center mb-8">Acceso Restringido</h2>
+                    <form onSubmit={(e) => {
+                        e.preventDefault();
+                        if (passwordInput === 'perfumeria2024') setIsAuthenticated(true);
+                        else alert('Contraseña incorrecta');
+                    }} className="space-y-6">
+                        <div>
+                            <label className="text-[10px] uppercase tracking-widest text-accent block mb-2">Contraseña</label>
+                            <input 
+                                type="password" 
+                                value={passwordInput} 
+                                onChange={e => setPasswordInput(e.target.value)}
+                                className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground"
+                            />
+                        </div>
+                        <button type="submit" className="w-full bg-accent text-accent-foreground py-3 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all premium-shadow">
+                            Ingresar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        );
+    }
     return (
         <div className="min-h-screen bg-background">
             <Navbar />
