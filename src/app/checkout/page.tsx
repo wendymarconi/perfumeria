@@ -12,7 +12,6 @@ export default function CheckoutPage() {
     const { cart, getTotalPrice, clearCart } = useCart();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
-    const router = useRouter();
 
     const [formData, setFormData] = useState({
         name: '',
