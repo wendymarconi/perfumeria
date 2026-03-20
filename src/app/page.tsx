@@ -38,14 +38,10 @@ export default async function Home() {
             {featuredPerfumes.map((perfume: any) => (
               <ProductCard
                 key={perfume.id}
-                id={perfume.id}
-                brand={perfume.brand}
-                name={perfume.name}
-                price={perfume.variants[0]?.price || 0}
-                image={perfume.mainImage}
-                category={perfume.category}
+                perfume={perfume}
               />
             ))}
+
           </div>
         </section>
 
