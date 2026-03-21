@@ -42,19 +42,19 @@ export default function ProductGallery({ images, name }: ProductGalleryProps) {
                             src={img}
                             alt={`${name} thumbnail ${idx + 1}`}
                             fill
-                            className="object-cover"
+                            className="object-contain p-2 bg-white"
                         />
                     </button>
                 ))}
             </div>
 
             {/* Main Image */}
-            <div className="relative flex-grow aspect-[4/5] bg-card overflow-hidden group order-1 md:order-2 border border-border/10">
+            <div className="relative flex-grow aspect-[4/5] bg-white overflow-hidden group order-1 md:order-2 border border-border/10">
                 <Image
                     src={images[activeIndex]}
                     alt={name}
                     fill
-                    className="object-cover transition-transform duration-700"
+                    className="object-contain p-12 transition-transform duration-700"
                     priority
                 />
                 

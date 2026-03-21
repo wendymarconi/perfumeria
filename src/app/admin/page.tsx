@@ -467,11 +467,11 @@ export default function AdminPage() {
 
                                             <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                                                 {JSON.parse(editData.images || '[]').map((img: string, idx: number) => (
-                                                    <div key={idx} className="relative aspect-square border border-border/30 overflow-hidden group">
+                                                    <div key={idx} className="relative aspect-square border border-border/30 overflow-hidden group bg-white p-2 text-center flex items-center justify-center">
                                                         <img 
                                                             src={img} 
                                                             alt={`Preview ${idx + 1}`} 
-                                                            className="w-full h-full object-cover"
+                                                            className="max-w-full max-h-full object-contain"
                                                         />
                                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                             <button 
@@ -539,11 +539,11 @@ export default function AdminPage() {
                                 ) : (
                                     /* View Mode */
                                     <div className="flex flex-col md:flex-row gap-8">
-                                        <div className="w-32 h-44 bg-background border border-border/10 flex-shrink-0 group overflow-hidden relative">
+                                        <div className="w-32 h-44 bg-background border border-border/10 flex-shrink-0 group overflow-hidden relative p-2">
                                             <img
                                                 src={product.mainImage}
                                                 alt={product.name}
-                                                className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700"
+                                                className="w-full h-full object-contain opacity-80 group-hover:opacity-100 transition-opacity duration-700"
                                             />
                                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                 <Camera size={20} className="text-accent" />
@@ -611,12 +611,15 @@ export default function AdminPage() {
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-2">
-                                                            <span className="text-xs font-sans text-accent">$</span>
+                                                            <span className="text-xs font-sans text-accent font-medium">
+                                                                {formatPrice(variant.price)}
+                                                            </span>
                                                             <input
                                                                 type="number"
+                                                                placeholder="Editar"
                                                                 defaultValue={variant.price}
                                                                 onBlur={(e) => handleUpdateVariant(variant.id, 'price', parseFloat(e.target.value))}
-                                                                className="w-full bg-transparent border-none p-0 text-sm font-medium focus:outline-none focus:ring-0 text-foreground"
+                                                                className="w-16 bg-transparent border-none p-0 text-[10px] focus:outline-none focus:ring-0 text-muted/40 hover:text-foreground transition-colors ml-auto text-right"
                                                             />
                                                         </div>
                                                     </div>
@@ -751,11 +754,11 @@ export default function AdminPage() {
 
                                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                                         {JSON.parse(newProductData.images || '[]').map((img: string, idx: number) => (
-                                            <div key={idx} className="relative aspect-square border border-border/30 overflow-hidden group">
+                                            <div key={idx} className="relative aspect-square border border-border/30 overflow-hidden group bg-white p-2 text-center flex items-center justify-center">
                                                 <img 
                                                     src={img} 
                                                     alt={`Preview ${idx + 1}`} 
-                                                    className="w-full h-full object-cover"
+                                                    className="max-w-full max-h-full object-contain"
                                                 />
                                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                     <button 

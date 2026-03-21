@@ -9,12 +9,12 @@ export default function ProductCard({ perfume }: { perfume: any }) {
 
     return (
         <Link href={`/producto/${perfume.id}`} className="group block">
-            <div className="aspect-[3/4] overflow-hidden bg-muted relative mb-6">
+            <div className="aspect-[3/4] overflow-hidden bg-white relative mb-6 p-4 border border-border/5">
                 <Image
                     src={perfume.mainImage}
                     alt={perfume.name}
                     fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="object-contain transition-transform duration-700 group-hover:scale-105 px-4 py-6"
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
 
