@@ -20,6 +20,14 @@ export default function AdminPage() {
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    
+    const statusTranslations: Record<string, string> = {
+        'PENDING': 'Pendiente',
+        'SHIPPED': 'Despachado',
+        'DELIVERED': 'Entregado',
+        'RETURNED': 'Devuelto',
+        'CANCELLED': 'Cancelado',
+    };
 
     const [newProductData, setNewProductData] = useState<any>({
         brand: '',
@@ -324,7 +332,9 @@ export default function AdminPage() {
                                         <div className="flex flex-col lg:items-end gap-4 min-w-[200px]">
                                             <div className="flex items-center gap-2 bg-background/50 border border-border/10 px-3 py-1.5 rounded-sm">
                                                 {getStatusIcon(order.status)}
-                                                <span className="text-[10px] uppercase tracking-widest font-semibold text-foreground">{order.status}</span>
+                                                <span className="text-[10px] uppercase tracking-widest font-semibold text-foreground">
+                                                    {statusTranslations[order.status] || order.status}
+                                                </span>
                                             </div>
 
                                             <select
@@ -358,7 +368,9 @@ export default function AdminPage() {
                                                     {order.statusHistory.map((history: any) => (
                                                         <div key={history.id} className="flex items-center gap-3 text-[10px] text-muted font-sans">
                                                             <div className="w-1 h-1 rounded-full bg-accent/40" />
-                                                            <span className="font-semibold text-foreground/80 lowercase">{history.status}:</span>
+                                                            <span className="font-semibold text-foreground/80">
+                                                                {statusTranslations[history.status] || history.status}:
+                                                            </span>
                                                             <span>{new Date(history.createdAt).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                                                         </div>
                                                     ))}
