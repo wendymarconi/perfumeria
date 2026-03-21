@@ -7,6 +7,7 @@ import { createOrder } from '@/lib/actions';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
+import { formatPrice } from '@/lib/formatters';
 
 export default function CheckoutPage() {
     const { cart, getTotalPrice, clearCart } = useCart();
@@ -129,14 +130,14 @@ export default function CheckoutPage() {
                                             {item.size} x {item.quantity}
                                         </span>
                                     </div>
-                                    <span className="text-sm font-sans font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                                    <span className="text-sm font-sans font-medium">{formatPrice(item.price * item.quantity)}</span>
                                 </div>
                             ))}
                         </div>
 
                         <div className="border-t border-border pt-6 flex justify-between items-center">
                             <span className="text-xs uppercase tracking-[0.2em] font-sans">Total</span>
-                            <span className="text-2xl font-serif">${getTotalPrice().toFixed(2)}</span>
+                            <span className="text-2xl font-serif">{formatPrice(getTotalPrice())}</span>
                         </div>
 
                         <p className="mt-8 text-[10px] text-muted leading-relaxed font-sans text-center">

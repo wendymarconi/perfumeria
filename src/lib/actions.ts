@@ -99,9 +99,12 @@ export async function getAdminProducts() {
 export async function updateProduct(id: string, data: {
     brand?: string;
     name?: string;
+    gender?: string;
     category?: string;
     description?: string;
     mainImage?: string;
+    images?: string; // JSON string
+    notes?: string;
 }) {
     try {
         await prisma.perfume.update({
@@ -118,7 +121,22 @@ export async function updateProduct(id: string, data: {
     }
 }
 
+export async function deleteProduct(id: string) {
+    try {
+        await prisma.perfume.delete({
+            where: { id }
+        });
+        revalidatePath("/admin");
+        revalidatePath("/catalogo");
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to delete product:", error);
+        return { success: false };
+    }
+}
+
 export async function updateVariant(id: string, data: {
+    size?: string;
     price?: number;
     stock?: number;
 }) {
@@ -127,7 +145,8 @@ export async function updateVariant(id: string, data: {
             where: { id },
             data: {
                 ...data,
-                stock: data.stock !== undefined ? Number(data.stock) : undefined
+                stock: data.stock !== undefined ? Number(data.stock) : undefined,
+                price: data.price !== undefined ? Number(data.price) : undefined
             }
         });
         revalidatePath("/admin");
@@ -140,6 +159,43 @@ export async function updateVariant(id: string, data: {
     }
 }
 
+export async function createVariant(perfumeId: string, data: {
+    size: string;
+    price: number;
+    stock: number;
+}) {
+    try {
+        await prisma.variant.create({
+            data: {
+                ...data,
+                perfumeId
+            }
+        });
+        revalidatePath("/admin");
+        revalidatePath("/catalogo");
+        revalidatePath(`/producto/${perfumeId}`);
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to create variant:", error);
+        return { success: false };
+    }
+}
+
+export async function deleteVariant(id: string) {
+    try {
+        const variant = await prisma.variant.delete({
+            where: { id }
+        });
+        revalidatePath("/admin");
+        revalidatePath("/catalogo");
+        revalidatePath(`/producto/${variant.perfumeId}`);
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to delete variant:", error);
+        return { success: false };
+    }
+}
+
 export async function createProduct(data: {
     brand: string;
     name: string;
@@ -147,6 +203,7 @@ export async function createProduct(data: {
     description: string;
     mainImage: string;
     gender: string;
+    images?: string;
     variants: {
         size: string;
         price: number;
@@ -162,13 +219,13 @@ export async function createProduct(data: {
                 description: data.description,
                 mainImage: data.mainImage,
                 gender: data.gender,
-                notes: "",
-                images: "[]",
+                notes: "Salida: ; Corazón: ; Fondo: ",
+                images: data.images || "[]",
                 variants: {
                     create: data.variants.map(v => ({
                         size: v.size,
-                        price: v.price,
-                        stock: v.stock
+                        price: Number(v.price),
+                        stock: Number(v.stock)
                     }))
                 }
             }

@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
-import { Clock, CheckCircle2, Truck, XCircle, ChevronRight, Package, ShoppingCart, Edit2, Save, Trash2, Camera, Upload, Image as ImageIcon } from 'lucide-react';
-import { getOrders, updateOrderStatus, getAdminProducts, updateProduct, updateVariant, createProduct } from '@/lib/actions';
+import { Clock, CheckCircle2, Truck, XCircle, ChevronRight, Package, ShoppingCart, Edit2, Save, Trash2, Camera, Upload, Image as ImageIcon, Plus, Trash, PlusCircle, MinusCircle } from 'lucide-react';
+import { getOrders, updateOrderStatus, getAdminProducts, updateProduct, updateVariant, createProduct, deleteProduct, createVariant, deleteVariant } from '@/lib/actions';
 import { formatPrice } from '@/lib/formatters';
 
 export default function AdminPage() {
@@ -27,11 +27,10 @@ export default function AdminPage() {
         category: 'Nicho',
         description: '',
         mainImage: '',
+        images: '[]',
         gender: 'Unisex',
         variants: [
-            { size: '5ml', price: 0, stock: 10 },
-            { size: '10ml', price: 0, stock: 10 },
-            { size: '100ml', price: 0, stock: 5 }
+            { size: '5ml', price: 0, stock: 10 }
         ]
     });
 
@@ -69,7 +68,9 @@ export default function AdminPage() {
             name: editData.name,
             brand: editData.brand,
             description: editData.description,
+            notes: editData.notes,
             mainImage: editData.mainImage,
+            images: editData.images
         });
 
         if (result.success) {
@@ -78,10 +79,35 @@ export default function AdminPage() {
         }
     }
 
-    async function handleUpdateVariant(variantId: string, field: 'price' | 'stock', value: number) {
-        const result = await updateVariant(variantId, { [field]: Number(value) });
+    async function handleDeleteProduct(id: string) {
+        if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
+            const result = await deleteProduct(id);
+            if (result.success) {
+                fetchProducts();
+            }
+        }
+    }
+
+    async function handleUpdateVariant(variantId: string, field: 'size' | 'price' | 'stock', value: any) {
+        const result = await updateVariant(variantId, { [field]: field === 'size' ? value : Number(value) });
         if (result.success) {
             fetchProducts();
+        }
+    }
+
+    async function handleAddVariant(productId: string) {
+        const result = await createVariant(productId, { size: 'Nueva Medida', price: 0, stock: 0 });
+        if (result.success) {
+            fetchProducts();
+        }
+    }
+
+    async function handleDeleteVariant(variantId: string) {
+        if (confirm('¿Eliminar esta medida?')) {
+            const result = await deleteVariant(variantId);
+            if (result.success) {
+                fetchProducts();
+            }
         }
     }
 
@@ -106,11 +132,10 @@ export default function AdminPage() {
         setIsLoading(false);
     }
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false) => {
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false, index?: number) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Check file size (optional, but good for base64)
         if (file.size > 2 * 1024 * 1024) {
             alert('La imagen es demasiado grande. Por favor usa una imagen de menos de 2MB.');
             return;
@@ -120,12 +145,40 @@ export default function AdminPage() {
         reader.onloadend = () => {
             const base64String = reader.result as string;
             if (isEdit) {
-                setEditData({ ...editData, mainImage: base64String });
+                const currentImages = JSON.parse(editData.images || '[]');
+                if (index !== undefined) {
+                    currentImages[index] = base64String;
+                } else if (currentImages.length < 5) {
+                    currentImages.push(base64String);
+                }
+                const mainImg = currentImages[0] || '';
+                setEditData({ ...editData, images: JSON.stringify(currentImages), mainImage: mainImg });
             } else {
-                setNewProductData({ ...newProductData, mainImage: base64String });
+                const currentImages = JSON.parse(newProductData.images || '[]');
+                if (index !== undefined) {
+                    currentImages[index] = base64String;
+                } else if (currentImages.length < 5) {
+                    currentImages.push(base64String);
+                }
+                const mainImg = currentImages[0] || '';
+                setNewProductData({ ...newProductData, images: JSON.stringify(currentImages), mainImage: mainImg });
             }
         };
         reader.readAsDataURL(file);
+    };
+
+    const handleRemoveImage = (index: number, isEdit: boolean = false) => {
+        if (isEdit) {
+            const currentImages = JSON.parse(editData.images || '[]');
+            currentImages.splice(index, 1);
+            const mainImg = currentImages[0] || '';
+            setEditData({ ...editData, images: JSON.stringify(currentImages), mainImage: mainImg });
+        } else {
+            const currentImages = JSON.parse(newProductData.images || '[]');
+            currentImages.splice(index, 1);
+            const mainImg = currentImages[0] || '';
+            setNewProductData({ ...newProductData, images: JSON.stringify(currentImages), mainImage: mainImg });
+        }
     };
 
     const getStatusIcon = (status: string) => {
@@ -354,29 +407,90 @@ export default function AdminPage() {
                                         </div>
 
                                         <div className="space-y-2">
-                                            <div className="flex justify-between items-end">
-                                                <label className="text-[10px] uppercase tracking-widest text-accent">URL Imagen Principal</label>
+                                            <label className="text-[10px] uppercase tracking-widest text-accent">Notas Olfativas</label>
+                                            <textarea
+                                                rows={3}
+                                                placeholder="Salida: ...; Corazón: ...; Fondo: ..."
+                                                value={editData.notes}
+                                                onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
+                                                className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
+                                            />
+                                            <p className="text-[8px] text-muted italic">Usa punto y coma (;) para separar las fases y dos puntos (:) para el título.</p>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-end mb-1">
+                                                <label className="text-[10px] uppercase tracking-widest text-accent">Imágenes del Perfume (Máx 5)</label>
                                                 <button 
                                                     onClick={() => editFileInputRef.current?.click()}
-                                                    className="text-[10px] uppercase tracking-widest text-accent hover:text-white flex items-center gap-1 transition-colors"
+                                                    disabled={JSON.parse(editData.images || '[]').length >= 5}
+                                                    className="text-[10px] uppercase tracking-widest text-accent hover:text-white flex items-center gap-1 transition-colors disabled:opacity-50"
                                                 >
-                                                    <Upload size={12} />
-                                                    <span>Subir Archivo</span>
+                                                    <Upload size={14} />
+                                                    <span>Añadir Imagen</span>
                                                 </button>
-                                                <input 
-                                                    type="file" 
-                                                    ref={editFileInputRef} 
-                                                    className="hidden" 
-                                                    accept="image/*"
-                                                    onChange={(e) => handleImageUpload(e, true)}
+                                            </div>
+                                            <input 
+                                                type="file" 
+                                                ref={editFileInputRef} 
+                                                className="hidden" 
+                                                accept="image/*"
+                                                onChange={(e) => handleImageUpload(e, true)}
+                                            />
+
+                                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                                                {JSON.parse(editData.images || '[]').map((img: string, idx: number) => (
+                                                    <div key={idx} className="relative aspect-square border border-border/30 overflow-hidden group">
+                                                        <img 
+                                                            src={img} 
+                                                            alt={`Preview ${idx + 1}`} 
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                            <button 
+                                                                onClick={() => handleRemoveImage(idx, true)}
+                                                                className="bg-rose-500 text-white p-1 rounded-full"
+                                                            >
+                                                                <Trash size={12} />
+                                                            </button>
+                                                        </div>
+                                                        {idx === 0 && (
+                                                            <div className="absolute top-0 left-0 bg-accent text-accent-foreground text-[8px] px-1.5 py-0.5 uppercase tracking-tighter font-bold">Principal</div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                                {JSON.parse(editData.images || '[]').length < 5 && (
+                                                    <button 
+                                                        onClick={() => editFileInputRef.current?.click()}
+                                                        className="aspect-square border border-dashed border-border/30 flex flex-col items-center justify-center gap-2 text-muted hover:text-accent hover:border-accent transition-all bg-background/20"
+                                                    >
+                                                        <PlusCircle size={20} />
+                                                        <span className="text-[8px] uppercase tracking-widest font-medium">Subir</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="space-y-2">
+                                                <input
+                                                    type="text"
+                                                    placeholder="O pega una URL de imagen aquí para añadir..."
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            const value = (e.target as HTMLInputElement).value;
+                                                            if (value) {
+                                                                const currentImages = JSON.parse(editData.images || '[]');
+                                                                if (currentImages.length < 5) {
+                                                                    currentImages.push(value);
+                                                                    setEditData({ ...editData, images: JSON.stringify(currentImages), mainImage: currentImages[0] });
+                                                                    (e.target as HTMLInputElement).value = '';
+                                                                } else {
+                                                                    alert('Máximo 5 imágenes permitidas.');
+                                                                }
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="w-full bg-background border border-border/30 p-3 text-xs focus:outline-none focus:border-accent text-foreground"
                                                 />
                                             </div>
-                                            <input
-                                                type="text"
-                                                value={editData.mainImage}
-                                                onChange={(e) => setEditData({ ...editData, mainImage: e.target.value })}
-                                                className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground"
-                                            />
                                         </div>
 
                                         <div className="flex justify-end gap-4 pt-4 border-t border-border/10">
@@ -415,26 +529,50 @@ export default function AdminPage() {
                                                     <span className="text-[10px] uppercase tracking-widest text-accent mb-1 block">{product.brand}</span>
                                                     <h3 className="text-xl font-serif text-foreground">{product.name}</h3>
                                                 </div>
-                                                <button
-                                                    onClick={() => {
-                                                        setEditingProduct(product.id);
-                                                        setEditData(product);
-                                                    }}
-                                                    className="p-2 text-muted hover:text-accent transition-colors"
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingProduct(product.id);
+                                                            setEditData({
+                                                                ...product,
+                                                                images: product.images || JSON.stringify([product.mainImage])
+                                                            });
+                                                        }}
+                                                        className="p-2 text-muted hover:text-accent transition-colors"
+                                                    >
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteProduct(product.id)}
+                                                        className="p-2 text-muted hover:text-rose-500 transition-colors"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             <p className="text-sm text-muted font-sans line-clamp-2 italic mb-6">
                                                 "{product.description}"
                                             </p>
 
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-border/5 pt-6">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 border-t border-border/5 pt-6">
                                                 {product.variants.map((variant: any) => (
                                                     <div key={variant.id} className="bg-background/40 p-3 border border-border/10">
                                                         <div className="flex justify-between items-center mb-2">
-                                                            <span className="text-[10px] uppercase tracking-widest text-muted">{variant.size}</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <input
+                                                                    type="text"
+                                                                    defaultValue={variant.size}
+                                                                    onBlur={(e) => handleUpdateVariant(variant.id, 'size', e.target.value)}
+                                                                    className="w-16 bg-transparent border-none p-0 text-[10px] uppercase tracking-widest focus:outline-none focus:ring-0 text-muted font-medium"
+                                                                />
+                                                                <button
+                                                                    onClick={() => handleDeleteVariant(variant.id)}
+                                                                    className="text-muted hover:text-rose-500 transition-colors"
+                                                                >
+                                                                    <Trash size={10} />
+                                                                </button>
+                                                            </div>
                                                             <div className="flex items-center gap-1">
                                                                 <span className="text-[9px] text-muted">Stock:</span>
                                                                 <input
@@ -456,6 +594,13 @@ export default function AdminPage() {
                                                         </div>
                                                     </div>
                                                 ))}
+                                                <button 
+                                                    onClick={() => handleAddVariant(product.id)}
+                                                    className="border border-dashed border-border/30 p-3 flex flex-col items-center justify-center gap-1 text-muted hover:text-accent hover:border-accent transition-all group"
+                                                >
+                                                    <Plus size={14} />
+                                                    <span className="text-[9px] uppercase tracking-widest font-medium">Añadir Medida</span>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -532,17 +677,29 @@ export default function AdminPage() {
                                 </div>
 
                                 <div className="space-y-2">
+                                    <label className="text-[10px] uppercase tracking-widest text-accent">Notas Olfativas</label>
+                                    <textarea
+                                        rows={3}
+                                        placeholder="Salida: ...; Corazón: ...; Fondo: ..."
+                                        value={newProductData.notes}
+                                        onChange={(e) => setNewProductData({ ...newProductData, notes: e.target.value })}
+                                        className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
+                                    />
+                                    <p className="text-[9px] text-muted italic">Ejemplo: Salida: Cítricos; Corazón: Jazmín; Fondo: Vainilla</p>
+                                </div>
+
+                                <div className="space-y-4">
                                     <div className="flex justify-between items-end mb-1">
-                                        <label className="text-[10px] uppercase tracking-widest text-accent">Imagen del Perfume</label>
+                                        <label className="text-[10px] uppercase tracking-widest text-accent">Imágenes del Perfume (Máx 5)</label>
                                         <div className="flex gap-4">
                                             <button 
                                                 onClick={() => fileInputRef.current?.click()}
-                                                className="text-[10px] uppercase tracking-widest text-accent hover:text-white flex items-center gap-1 transition-colors"
+                                                disabled={JSON.parse(newProductData.images || '[]').length >= 5}
+                                                className="text-[10px] uppercase tracking-widest text-accent hover:text-white flex items-center gap-1 transition-colors disabled:opacity-50"
                                             >
                                                 <Upload size={14} />
-                                                <span>Subir desde PC</span>
+                                                <span>Añadir Imagen</span>
                                             </button>
-                                            <span className="text-[9px] text-muted italic">o pega un link abajo</span>
                                         </div>
                                         <input 
                                             type="file" 
@@ -552,50 +709,96 @@ export default function AdminPage() {
                                             onChange={(e) => handleImageUpload(e, false)}
                                         />
                                     </div>
-                                    <div className="relative group">
-                                        <input
-                                            type="text"
-                                            placeholder="https://ejemplo.com/foto.jpg"
-                                            value={newProductData.mainImage}
-                                            onChange={(e) => setNewProductData({ ...newProductData, mainImage: e.target.value })}
-                                            className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground pr-12"
-                                        />
-                                        {newProductData.mainImage && (
-                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500">
-                                                <CheckCircle2 size={18} />
-                                            </div>
-                                        )}
-                                    </div>
-                                    
-                                    {newProductData.mainImage && (
-                                        <div className="mt-4 flex justify-center">
-                                            <div className="relative w-32 h-32 border border-border/30 overflow-hidden group">
+
+                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                                        {JSON.parse(newProductData.images || '[]').map((img: string, idx: number) => (
+                                            <div key={idx} className="relative aspect-square border border-border/30 overflow-hidden group">
                                                 <img 
-                                                    src={newProductData.mainImage} 
-                                                    alt="Preview" 
+                                                    src={img} 
+                                                    alt={`Preview ${idx + 1}`} 
                                                     className="w-full h-full object-cover"
                                                 />
                                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                     <button 
-                                                        onClick={() => setNewProductData({ ...newProductData, mainImage: '' })}
-                                                        className="bg-rose-500 text-white p-1.5 rounded-full"
+                                                        onClick={() => handleRemoveImage(idx, false)}
+                                                        className="bg-rose-500 text-white p-1 rounded-full"
                                                     >
-                                                        <XCircle size={14} />
+                                                        <Trash size={12} />
                                                     </button>
                                                 </div>
+                                                {idx === 0 && (
+                                                    <div className="absolute top-0 left-0 bg-accent text-accent-foreground text-[8px] px-1.5 py-0.5 uppercase tracking-tighter font-bold">Principal</div>
+                                                )}
                                             </div>
-                                        </div>
-                                    )}
+                                        ))}
+                                        {JSON.parse(newProductData.images || '[]').length < 5 && (
+                                            <button 
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="aspect-square border border-dashed border-border/30 flex flex-col items-center justify-center gap-2 text-muted hover:text-accent hover:border-accent transition-all bg-background/20"
+                                            >
+                                                <PlusCircle size={20} />
+                                                <span className="text-[8px] uppercase tracking-widest font-medium">Subir</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <input
+                                            type="text"
+                                            placeholder="O pega una URL de imagen aquí para añadir..."
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    const value = (e.target as HTMLInputElement).value;
+                                                    if (value) {
+                                                        const currentImages = JSON.parse(newProductData.images || '[]');
+                                                        if (currentImages.length < 5) {
+                                                            currentImages.push(value);
+                                                            const mainImg = currentImages[0];
+                                                            setNewProductData({ ...newProductData, images: JSON.stringify(currentImages), mainImage: mainImg });
+                                                            (e.target as HTMLInputElement).value = '';
+                                                        } else {
+                                                            alert('Máximo 5 imágenes permitidas.');
+                                                        }
+                                                    }
+                                                }
+                                            }}
+                                            className="w-full bg-background border border-border/30 p-3 text-xs focus:outline-none focus:border-accent text-foreground"
+                                        />
+                                        <p className="text-[9px] text-muted italic">La primera imagen será la principal.</p>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-4 pt-4 border-t border-border/10">
-                                    <label className="text-[10px] uppercase tracking-widest text-accent block text-center">Configuración de Tamaños & Stock</label>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <label className="text-[10px] uppercase tracking-widest text-accent block">Configuración de Tamaños & Stock</label>
+                                        <button 
+                                            onClick={() => {
+                                                const newVariants = [...newProductData.variants, { size: 'N/A', price: 0, stock: 0 }];
+                                                setNewProductData({ ...newProductData, variants: newVariants });
+                                            }}
+                                            className="text-[10px] uppercase tracking-widest text-accent hover:text-white flex items-center gap-1 transition-colors"
+                                        >
+                                            <Plus size={14} />
+                                            <span>Añadir Medida</span>
+                                        </button>
+                                    </div>
 
                                     <div className="space-y-3">
                                         {newProductData.variants.map((variant: any, idx: number) => (
-                                            <div key={idx} className="grid grid-cols-3 gap-4 items-center bg-background/30 p-4 border border-border/5">
-                                                <div className="text-xs uppercase tracking-widest text-muted">{variant.size}</div>
-                                                <div className="flex items-center gap-2 border-b border-border/50 pb-1">
+                                            <div key={idx} className="grid grid-cols-12 gap-4 items-center bg-background/30 p-4 border border-border/5">
+                                                <div className="col-span-4">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Tamaño (ej: 5ml)"
+                                                        value={variant.size}
+                                                        onChange={(e) => {
+                                                            const newVariants = [...newProductData.variants];
+                                                            newVariants[idx].size = e.target.value;
+                                                            setNewProductData({ ...newProductData, variants: newVariants });
+                                                        }}
+                                                        className="w-full bg-transparent border-b border-border/50 p-1 text-xs uppercase tracking-widest focus:outline-none focus:border-accent text-foreground"
+                                                    />
+                                                </div>
+                                                <div className="col-span-3 flex items-center gap-2 border-b border-border/50 pb-1">
                                                     <span className="text-xs text-accent">$</span>
                                                     <input
                                                         type="number"
@@ -609,8 +812,8 @@ export default function AdminPage() {
                                                         className="w-full bg-transparent border-none p-0 text-sm focus:outline-none focus:ring-0 text-foreground"
                                                     />
                                                 </div>
-                                                <div className="flex items-center gap-2 border-b border-border/50 pb-1">
-                                                    <span className="text-[9px] text-muted font-sans italic">Unds:</span>
+                                                <div className="col-span-3 flex items-center gap-2 border-b border-border/50 pb-1">
+                                                    <span className="text-[9px] text-muted font-sans italic">Stock:</span>
                                                     <input
                                                         type="number"
                                                         placeholder="Stock"
@@ -622,6 +825,17 @@ export default function AdminPage() {
                                                         }}
                                                         className="w-full bg-transparent border-none p-0 text-sm focus:outline-none focus:ring-0 text-foreground"
                                                     />
+                                                </div>
+                                                <div className="col-span-2 flex justify-end">
+                                                    <button 
+                                                        onClick={() => {
+                                                            const newVariants = newProductData.variants.filter((_: any, i: number) => i !== idx);
+                                                            setNewProductData({ ...newProductData, variants: newVariants });
+                                                        }}
+                                                        className="text-muted hover:text-rose-500 transition-colors"
+                                                    >
+                                                        <MinusCircle size={18} />
+                                                    </button>
                                                 </div>
                                             </div>
                                         ))}
