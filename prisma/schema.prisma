@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Perfume {
+  id          String    @id @default(cuid())
+  brand       String
+  name        String
+  gender      String    // Male, Female, Unisex
+  category    String    // Arabe, Nicho, Diseñador, etc.
+  description String
+  notes       String    // JSON string or comma separated: "Top:..., Heart:..., Base:..."
+  mainImage   String
+  images      String    // JSON string of image URLs
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  variants    Variant[]
+}
+
+model Variant {
+  id        String  @id @default(cuid())
+  size      String  // e.g., "5ml", "10ml", "100ml"
+  price     Float
+  stock     Int     @default(0)
+  perfumeId String
+  perfume   Perfume @relation(fields: [perfumeId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+}
+model Order {
+  id            String               @id @default(cuid())
+  customerName  String
+  customerEmail String
+  total         Float
+  status        String               @default("PENDING") // PENDING, SHIPPED, DELIVERED, CANCELLED
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+}
+
+model OrderStatusHistory {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    String
+  createdAt DateTime @default(now())
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId String
+  variant   Variant @relation(fields: [variantId], references: [id])
+  quantity  Int
+  price     Float
+}
