@@ -97,16 +97,18 @@ export default async function ProductDetailPage({
                             <h3 className="text-xs uppercase tracking-widest font-sans mb-6 opacity-50">
                                 Notas Olfativas
                             </h3>
-                            <div className="space-y-4">
+                            <div className="space-y-5">
                                 {perfume.notes.split(";").map((note, index) => {
-                                    const [title, content] = note.split(":");
+                                    const colonIndex = note.indexOf(":");
+                                    const title = colonIndex !== -1 ? note.substring(0, colonIndex) : note;
+                                    const content = colonIndex !== -1 ? note.substring(colonIndex + 1) : '';
                                     return (
-                                        <div key={index} className="flex flex-col">
-                                            <span className="text-[10px] uppercase tracking-widest text-accent font-bold mb-1">
+                                        <div key={index} className="flex flex-col gap-1">
+                                            <span className="text-[10px] uppercase tracking-widest text-accent font-bold">
                                                 {title.trim()}
                                             </span>
-                                            <span className="text-sm font-sans italic opacity-80">
-                                                {content?.trim()}
+                                            <span className="text-sm font-sans italic opacity-80 leading-relaxed break-words">
+                                                {content.trim()}
                                             </span>
                                         </div>
                                     );
