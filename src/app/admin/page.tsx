@@ -28,6 +28,7 @@ export default function AdminPage() {
         description: '',
         mainImage: '',
         images: '[]',
+        accords: '',
         gender: 'Unisex',
         variants: [
             { size: '5ml', price: 0, stock: 10 }
@@ -69,6 +70,7 @@ export default function AdminPage() {
             brand: editData.brand,
             description: editData.description,
             notes: editData.notes,
+            accords: editData.accords,
             mainImage: editData.mainImage,
             images: editData.images
         });
@@ -122,6 +124,7 @@ export default function AdminPage() {
             setActiveTab('inventory');
             setNewProductData({
                 brand: '', name: '', category: 'Nicho', description: '', mainImage: '', gender: 'Unisex',
+                images: '[]', accords: '',
                 variants: [
                     { size: '5ml', price: 0, stock: 10 },
                     { size: '10ml', price: 0, stock: 10 },
@@ -418,6 +421,18 @@ export default function AdminPage() {
                                             <p className="text-[8px] text-muted italic">Usa punto y coma (;) para separar las fases y dos puntos (:) para el título.</p>
                                         </div>
 
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] uppercase tracking-widest text-accent">Acordes Principales</label>
+                                            <textarea
+                                                rows={2}
+                                                placeholder="cítrico, dulce:80, floral, amaderado"
+                                                value={editData.accords}
+                                                onChange={(e) => setEditData({ ...editData, accords: e.target.value })}
+                                                className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
+                                            />
+                                            <p className="text-[8px] text-muted italic">Separa por comas. Opcional el peso (0-100) ej: cítrico:90.</p>
+                                        </div>
+
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-end mb-1">
                                                 <label className="text-[10px] uppercase tracking-widest text-accent">Imágenes del Perfume (Máx 5)</label>
@@ -686,6 +701,18 @@ export default function AdminPage() {
                                         className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
                                     />
                                     <p className="text-[9px] text-muted italic">Ejemplo: Salida: Cítricos; Corazón: Jazmín; Fondo: Vainilla</p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] uppercase tracking-widest text-accent">Acordes Principales</label>
+                                    <textarea
+                                        rows={2}
+                                        placeholder="cítrico, dulce:80, floral, amaderado"
+                                        value={newProductData.accords}
+                                        onChange={(e) => setNewProductData({ ...newProductData, accords: e.target.value })}
+                                        className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
+                                    />
+                                    <p className="text-[9px] text-muted italic">Separa los acordes por comas (ej: cítrico, dulce, floral).</p>
                                 </div>
 
                                 <div className="space-y-4">

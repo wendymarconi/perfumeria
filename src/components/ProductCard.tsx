@@ -19,7 +19,7 @@ export default function ProductCard({ perfume }: { perfume: any }) {
 
                 {/* Gender Tag */}
                 <span className="absolute top-4 left-4 bg-background/80 backdrop-blur-sm px-2 py-1 text-[8px] uppercase tracking-widest">
-                    {perfume.gender}
+                    {perfume.gender === 'Male' ? 'Hombre' : perfume.gender === 'Female' ? 'Mujer' : perfume.gender}
                 </span>
             </div>
 
@@ -28,7 +28,7 @@ export default function ProductCard({ perfume }: { perfume: any }) {
                 <h3 className="text-base font-serif text-foreground group-hover:text-[#D4AF37] transition-colors">{perfume.name}</h3>
                 <div className="flex items-center justify-between pt-1">
                     <p className="text-xs text-muted font-sans">
-                        Desde <span className="text-foreground font-medium">{formatPrice(minPrice)}</span>
+                        Precio <span className="text-foreground font-medium">{formatPrice(minPrice)}</span>
                     </p>
                     <ArrowRight size={14} className="text-[#D4AF37] opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-500" />
                 </div>

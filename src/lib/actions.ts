@@ -105,6 +105,7 @@ export async function updateProduct(id: string, data: {
     mainImage?: string;
     images?: string; // JSON string
     notes?: string;
+    accords?: string;
 }) {
     try {
         await prisma.perfume.update({
@@ -204,6 +205,7 @@ export async function createProduct(data: {
     mainImage: string;
     gender: string;
     images?: string;
+    accords?: string;
     variants: {
         size: string;
         price: number;
@@ -220,6 +222,7 @@ export async function createProduct(data: {
                 mainImage: data.mainImage,
                 gender: data.gender,
                 notes: "Salida: ; Corazón: ; Fondo: ",
+                accords: data.accords || "[]",
                 images: data.images || "[]",
                 variants: {
                     create: data.variants.map(v => ({

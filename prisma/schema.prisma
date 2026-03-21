@@ -15,6 +15,7 @@ model Perfume {
   category    String    // Arabe, Nicho, Diseñador, etc.
   description String
   notes       String    // JSON string or comma separated: "Top:..., Heart:..., Base:..."
+  accords     String?   // JSON string of accords: [{name, color, weight}]
   mainImage   String
   images      String    // JSON string of image URLs
   createdAt   DateTime  @default(now())
