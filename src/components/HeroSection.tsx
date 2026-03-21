@@ -7,7 +7,7 @@ export default function HeroSection() {
             
             <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center animate-fade-up">
                 <span className="text-xs md:text-sm uppercase tracking-[0.4em] text-accent font-sans mb-8">
-                    La Esencia de la Elegancia
+                    La Esencia de la Elegancia • Muchos no son suficientes
                 </span>
                 
                 <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif font-light mb-8 leading-tight tracking-tight">

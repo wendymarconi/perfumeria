@@ -10,8 +10,7 @@ export default async function Home() {
       variants: {
         orderBy: {
           price: 'asc'
-        },
-        take: 1
+        }
       }
     }
   });
