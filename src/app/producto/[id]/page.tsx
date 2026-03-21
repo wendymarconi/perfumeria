@@ -59,11 +59,8 @@ export default async function ProductDetailPage({
                                     }
                                 })()} 
                                 name={perfume.name} 
+                                category={perfume.category}
                             />
-                            {/* Category Tag */}
-                            <span className="absolute top-6 left-6 text-[10px] uppercase tracking-widest font-sans bg-background/60 border border-accent/30 text-accent px-3 py-1.5 glass z-20">
-                                {perfume.category}
-                            </span>
                         </div>
 
                         {/* Accords Section (Desktop only here, or integrated) */}

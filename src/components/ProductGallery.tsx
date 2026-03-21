@@ -8,9 +8,10 @@ import { cn } from '@/lib/utils';
 interface ProductGalleryProps {
     images: string[];
     name: string;
+    category?: string;
 }
 
-export default function ProductGallery({ images, name }: ProductGalleryProps) {
+export default function ProductGallery({ images, name, category }: ProductGalleryProps) {
     const [activeIndex, setActiveIndex] = useState(0);
 
     const nextImage = () => {
@@ -57,7 +58,12 @@ export default function ProductGallery({ images, name }: ProductGalleryProps) {
                     className="object-contain p-12 transition-transform duration-700"
                     priority
                 />
-                
+                {/* Category Tag */}
+                {category && (
+                    <span className="absolute top-4 left-4 text-[10px] uppercase tracking-widest font-sans bg-background/60 border border-accent/30 text-accent px-3 py-1.5 glass z-20">
+                        {category}
+                    </span>
+                )}
                 {/* Navigation Arrows */}
                 {images.length > 1 && (
                     <>
