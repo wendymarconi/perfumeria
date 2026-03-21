@@ -50,11 +50,11 @@ export default function CartDrawer() {
                                 <div className="space-y-8">
                                     {cart.map((item) => (
                                         <div key={item.id} className="flex gap-4">
-                                            <div className="w-24 h-32 bg-card flex-shrink-0 border border-border/10">
+                                            <div className="w-24 h-32 bg-white flex-shrink-0 border border-border/10 flex items-center justify-center p-2">
                                                 <img
                                                     src={item.image}
                                                     alt={item.name}
-                                                    className="w-full h-full object-cover"
+                                                    className="w-full h-full object-contain"
                                                 />
                                             </div>
                                             <div className="flex-grow">

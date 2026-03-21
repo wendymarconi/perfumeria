@@ -20,6 +20,20 @@ export default function AdminPage() {
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+
+    // Filtros de Inventario
+    const [searchName, setSearchName] = useState('');
+    const [searchBrand, setSearchBrand] = useState('');
+    const [searchCategory, setSearchCategory] = useState('');
+    const [searchGender, setSearchGender] = useState('');
+
+    const filteredProducts = products.filter((p: any) => {
+        const matchName = searchName === '' || p.name.toLowerCase().includes(searchName.toLowerCase());
+        const matchBrand = searchBrand === '' || p.brand.toLowerCase().includes(searchBrand.toLowerCase());
+        const matchCategory = searchCategory === '' || p.category === searchCategory;
+        const matchGender = searchGender === '' || p.gender === searchGender;
+        return matchName && matchBrand && matchCategory && matchGender;
+    });
     
     const statusTranslations: Record<string, string> = {
         'PENDING': 'Pendiente',
@@ -384,8 +398,75 @@ export default function AdminPage() {
                     )
                 ) : activeTab === 'inventory' ? (
                     /* INVENTORY TAB */
-                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                        {products.map((product) => (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+                        {/* Search / Filter Bar */}
+                        <div className="bg-card border border-border/20 p-5 glass">
+                            <span className="text-[9px] uppercase tracking-[0.3em] text-accent mb-4 block font-medium">Filtrar Inventario</span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-[9px] uppercase tracking-widest text-muted">Nombre</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar por nombre..."
+                                        value={searchName}
+                                        onChange={(e) => setSearchName(e.target.value)}
+                                        className="w-full bg-background border border-border/30 px-3 py-2 text-xs focus:outline-none focus:border-accent text-foreground"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] uppercase tracking-widest text-muted">Marca</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar por marca..."
+                                        value={searchBrand}
+                                        onChange={(e) => setSearchBrand(e.target.value)}
+                                        className="w-full bg-background border border-border/30 px-3 py-2 text-xs focus:outline-none focus:border-accent text-foreground"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] uppercase tracking-widest text-muted">Categoría</label>
+                                    <select
+                                        value={searchCategory}
+                                        onChange={(e) => setSearchCategory(e.target.value)}
+                                        className="w-full bg-background border border-border/30 px-3 py-2 text-xs focus:outline-none focus:border-accent text-foreground"
+                                    >
+                                        <option value="">Todas</option>
+                                        <option value="Nicho">Nicho</option>
+                                        <option value="Diseñador">Diseñador</option>
+                                        <option value="Arabe">Árabe</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] uppercase tracking-widest text-muted">Género</label>
+                                    <select
+                                        value={searchGender}
+                                        onChange={(e) => setSearchGender(e.target.value)}
+                                        className="w-full bg-background border border-border/30 px-3 py-2 text-xs focus:outline-none focus:border-accent text-foreground"
+                                    >
+                                        <option value="">Todos</option>
+                                        <option value="Male">Hombre</option>
+                                        <option value="Female">Mujer</option>
+                                        <option value="Unisex">Unisex</option>
+                                    </select>
+                                </div>
+                            </div>
+                            {(searchName || searchBrand || searchCategory || searchGender) && (
+                                <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/10">
+                                    <span className="text-[9px] text-muted">{filteredProducts.length} resultado(s) encontrado(s)</span>
+                                    <button
+                                        onClick={() => { setSearchName(''); setSearchBrand(''); setSearchCategory(''); setSearchGender(''); }}
+                                        className="text-[9px] uppercase tracking-widest text-accent hover:opacity-70 transition-opacity"
+                                    >
+                                        Limpiar filtros
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Product List */}
+                        <div className="space-y-4">
+                        {filteredProducts.map((product: any) => (
                             <div key={product.id} className="bg-card border border-border/20 p-8 hover:border-accent/40 transition-all duration-500">
                                 {editingProduct === product.id ? (
                                     /* Edit Mode */
@@ -637,6 +718,7 @@ export default function AdminPage() {
                                 )}
                             </div>
                         ))}
+                        </div>
                     </div>
                 ) : (
                     /* CREATE TAB */
