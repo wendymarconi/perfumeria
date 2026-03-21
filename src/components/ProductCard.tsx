@@ -4,7 +4,8 @@ import Link from "next/link";
 import { formatPrice } from '@/lib/formatters';
 
 export default function ProductCard({ perfume }: { perfume: any }) {
-    const minPrice = Math.min(...perfume.variants.map((v: any) => v.price));
+    const prices = perfume.variants.map((v: any) => v.price).filter((p: number) => p > 0);
+    const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
 
     return (
         <Link href={`/producto/${perfume.id}`} className="group block">
