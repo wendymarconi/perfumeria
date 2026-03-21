@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
-import { Clock, CheckCircle2, Truck, XCircle, ChevronRight, Package, ShoppingCart, Edit2, Save, Trash2, Camera } from 'lucide-react';
+import { Clock, CheckCircle2, Truck, XCircle, ChevronRight, Package, ShoppingCart, Edit2, Save, Trash2, Camera, Upload, Image as ImageIcon } from 'lucide-react';
 import { getOrders, updateOrderStatus, getAdminProducts, updateProduct, updateVariant, createProduct } from '@/lib/actions';
 import { formatPrice } from '@/lib/formatters';
 
@@ -13,6 +13,8 @@ export default function AdminPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [editingProduct, setEditingProduct] = useState<string | null>(null);
     const [editData, setEditData] = useState<any>({});
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const editFileInputRef = React.useRef<HTMLInputElement>(null);
     
     // Filtros de Pedidos
     const [statusFilter, setStatusFilter] = useState('ALL');
@@ -84,6 +86,10 @@ export default function AdminPage() {
     }
 
     async function handleCreateProduct() {
+        if (!newProductData.mainImage) {
+            alert('Por favor, selecciona una imagen o introduce una URL.');
+            return;
+        }
         setIsLoading(true);
         const result = await createProduct(newProductData);
         if (result.success) {
@@ -99,6 +105,28 @@ export default function AdminPage() {
         }
         setIsLoading(false);
     }
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Check file size (optional, but good for base64)
+        if (file.size > 2 * 1024 * 1024) {
+            alert('La imagen es demasiado grande. Por favor usa una imagen de menos de 2MB.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64String = reader.result as string;
+            if (isEdit) {
+                setEditData({ ...editData, mainImage: base64String });
+            } else {
+                setNewProductData({ ...newProductData, mainImage: base64String });
+            }
+        };
+        reader.readAsDataURL(file);
+    };
 
     const getStatusIcon = (status: string) => {
         switch (status) {
@@ -326,7 +354,23 @@ export default function AdminPage() {
                                         </div>
 
                                         <div className="space-y-2">
-                                            <label className="text-[10px] uppercase tracking-widest text-accent">URL Imagen Principal</label>
+                                            <div className="flex justify-between items-end">
+                                                <label className="text-[10px] uppercase tracking-widest text-accent">URL Imagen Principal</label>
+                                                <button 
+                                                    onClick={() => editFileInputRef.current?.click()}
+                                                    className="text-[10px] uppercase tracking-widest text-accent hover:text-white flex items-center gap-1 transition-colors"
+                                                >
+                                                    <Upload size={12} />
+                                                    <span>Subir Archivo</span>
+                                                </button>
+                                                <input 
+                                                    type="file" 
+                                                    ref={editFileInputRef} 
+                                                    className="hidden" 
+                                                    accept="image/*"
+                                                    onChange={(e) => handleImageUpload(e, true)}
+                                                />
+                                            </div>
                                             <input
                                                 type="text"
                                                 value={editData.mainImage}
@@ -489,16 +533,59 @@ export default function AdminPage() {
 
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-end mb-1">
-                                        <label className="text-[10px] uppercase tracking-widest text-accent">URL Imagen Principal</label>
-                                        <span className="text-[9px] text-muted italic">Tip: Click derecho &gt; Copiar dirección de imagen</span>
+                                        <label className="text-[10px] uppercase tracking-widest text-accent">Imagen del Perfume</label>
+                                        <div className="flex gap-4">
+                                            <button 
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="text-[10px] uppercase tracking-widest text-accent hover:text-white flex items-center gap-1 transition-colors"
+                                            >
+                                                <Upload size={14} />
+                                                <span>Subir desde PC</span>
+                                            </button>
+                                            <span className="text-[9px] text-muted italic">o pega un link abajo</span>
+                                        </div>
+                                        <input 
+                                            type="file" 
+                                            ref={fileInputRef} 
+                                            className="hidden" 
+                                            accept="image/*"
+                                            onChange={(e) => handleImageUpload(e, false)}
+                                        />
                                     </div>
-                                    <input
-                                        type="text"
-                                        placeholder="https://ejemplo.com/foto.jpg"
-                                        value={newProductData.mainImage}
-                                        onChange={(e) => setNewProductData({ ...newProductData, mainImage: e.target.value })}
-                                        className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground"
-                                    />
+                                    <div className="relative group">
+                                        <input
+                                            type="text"
+                                            placeholder="https://ejemplo.com/foto.jpg"
+                                            value={newProductData.mainImage}
+                                            onChange={(e) => setNewProductData({ ...newProductData, mainImage: e.target.value })}
+                                            className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground pr-12"
+                                        />
+                                        {newProductData.mainImage && (
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500">
+                                                <CheckCircle2 size={18} />
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    {newProductData.mainImage && (
+                                        <div className="mt-4 flex justify-center">
+                                            <div className="relative w-32 h-32 border border-border/30 overflow-hidden group">
+                                                <img 
+                                                    src={newProductData.mainImage} 
+                                                    alt="Preview" 
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <button 
+                                                        onClick={() => setNewProductData({ ...newProductData, mainImage: '' })}
+                                                        className="bg-rose-500 text-white p-1.5 rounded-full"
+                                                    >
+                                                        <XCircle size={14} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-4 pt-4 border-t border-border/10">
