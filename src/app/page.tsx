@@ -11,8 +11,7 @@ export default async function Home() {
       variants: {
         orderBy: {
           price: 'asc'
-        },
-        take: 1
+        }
       }
     }
   });
@@ -44,7 +43,6 @@ export default async function Home() {
                 perfume={perfume}
               />
             ))}
-
           </div>
         </section>
 

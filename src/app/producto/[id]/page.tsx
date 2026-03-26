@@ -6,6 +6,8 @@ import { ArrowLeft, ShoppingBag, ShieldCheck, Truck } from "lucide-react";
 import Link from "next/link";
 
 import ProductActions from "@/components/ProductActions";
+import ProductGallery from "@/components/ProductGallery";
+import ProductAccords from "@/components/ProductAccords";
 
 export default async function ProductDetailPage({
     params,
@@ -45,18 +47,26 @@ export default async function ProductDetailPage({
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
                     {/* Product Images */}
-                    <div className="relative aspect-[4/5] overflow-hidden bg-card">
-                        <Image
-                            src={perfume.mainImage}
-                            alt={perfume.name}
-                            fill
-                            className="object-cover"
-                            priority
-                        />
-                        {/* Category Tag */}
-                        <span className="absolute top-6 left-6 text-[10px] uppercase tracking-widest font-sans bg-background/60 border border-accent/30 text-accent px-3 py-1.5 glass">
-                            {perfume.category}
-                        </span>
+                    <div className="flex flex-col gap-12">
+                        <div className="relative">
+                            <ProductGallery 
+                                images={(() => {
+                                    try {
+                                        const parsed = JSON.parse(perfume.images || '[]');
+                                        return parsed.length > 0 ? parsed : [perfume.mainImage];
+                                    } catch {
+                                        return [perfume.mainImage];
+                                    }
+                                })()} 
+                                name={perfume.name} 
+                                category={perfume.category}
+                            />
+                        </div>
+
+                        {/* Accords Section (Desktop only here, or integrated) */}
+                        <div className="hidden lg:block pt-8 border-t border-border/10">
+                            <ProductAccords accordsString={perfume.accords || ''} />
+                        </div>
                     </div>
 
                     {/* Product Info */}
@@ -69,9 +79,14 @@ export default async function ProductDetailPage({
                             <p className="text-sm uppercase tracking-widest text-muted mb-8">
                                 Fragancia {perfume.gender === "Male" ? "Masculina" : perfume.gender === "Female" ? "Femenina" : "Unisex"}
                             </p>
-                            <p className="text-lg font-sans font-light leading-relaxed text-foreground/80">
+                            <p className="text-lg font-sans font-light leading-relaxed text-foreground/80 mb-10">
                                 {perfume.description}
                             </p>
+
+                            {/* Accords Section (Mobile only here) */}
+                            <div className="lg:hidden mb-12">
+                                <ProductAccords accordsString={perfume.accords || ''} />
+                            </div>
                         </div>
 
                         {/* Olfactory Notes */}
@@ -79,16 +94,18 @@ export default async function ProductDetailPage({
                             <h3 className="text-xs uppercase tracking-widest font-sans mb-6 opacity-50">
                                 Notas Olfativas
                             </h3>
-                            <div className="space-y-4">
+                            <div className="space-y-5">
                                 {perfume.notes.split(";").map((note, index) => {
-                                    const [title, content] = note.split(":");
+                                    const colonIndex = note.indexOf(":");
+                                    const title = colonIndex !== -1 ? note.substring(0, colonIndex) : note;
+                                    const content = colonIndex !== -1 ? note.substring(colonIndex + 1) : '';
                                     return (
-                                        <div key={index} className="flex flex-col">
-                                            <span className="text-[10px] uppercase tracking-widest text-accent font-bold mb-1">
+                                        <div key={index} className="flex flex-col gap-1">
+                                            <span className="text-[10px] uppercase tracking-widest text-accent font-bold">
                                                 {title.trim()}
                                             </span>
-                                            <span className="text-sm font-sans italic opacity-80">
-                                                {content?.trim()}
+                                            <span className="text-sm font-sans italic opacity-80 leading-relaxed break-words">
+                                                {content.trim()}
                                             </span>
                                         </div>
                                     );

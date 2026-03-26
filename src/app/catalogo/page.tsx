@@ -21,7 +21,6 @@ export default async function CatalogPage({
                 orderBy: {
                     price: "asc",
                 },
-                take: 1,
             },
         },
     });

@@ -15,6 +15,7 @@ model Perfume {
   category    String    // Arabe, Nicho, Diseñador, etc.
   description String
   notes       String    // JSON string or comma separated: "Top:..., Heart:..., Base:..."
+  accords     String?   // JSON string of accords: [{name, color, weight}]
   mainImage   String
   images      String    // JSON string of image URLs
   createdAt   DateTime  @default(now())
@@ -32,14 +33,23 @@ model Variant {
   orderItems OrderItem[]
 }
 model Order {
-  id            String      @id @default(cuid())
+  id            String               @id @default(cuid())
   customerName  String
   customerEmail String
   total         Float
-  status        String      @default("PENDING") // PENDING, SHIPPED, DELIVERED, CANCELLED
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  status        String               @default("PENDING") // PENDING, SHIPPED, DELIVERED, CANCELLED
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
   items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+}
+
+model OrderStatusHistory {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    String
+  createdAt DateTime @default(now())
 }
 
 model OrderItem {

@@ -1,20 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0F171A;
-  /* Slightly lighter deep teal */
-  --foreground: #F1F1F1;
-  --card-background: #162429;
-  /* Lighter teal for cards */
-  --accent: #D4AF37;
-  /* Refined Gold */
-  --accent-foreground: #05080A;
-  --muted: #94A3B8;
-  --border: rgba(212, 175, 55, 0.2);
+  --background: #FFFFFF;
+  --foreground: #0F171A;
+  --card-background: #F8FAFB;
+  --accent: #B8860B; /* Darker Gold for visibility on white */
+  --accent-foreground: #FFFFFF;
+  --muted: #64748B;
+  --border: rgba(0, 0, 0, 0.08);
 
-  /* Glassmorphism utility for dark mode */
-  --glass-bg: rgba(15, 23, 26, 0.85);
-  --glass-border: rgba(212, 175, 55, 0.25);
+  /* Glassmorphism utility for light mode */
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.1);
 }
 
 @theme inline {

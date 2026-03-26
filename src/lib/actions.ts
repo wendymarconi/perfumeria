@@ -28,6 +28,11 @@ export async function createOrder(data: {
                         price: item.price,
                     })),
                 },
+                statusHistory: {
+                    create: {
+                        status: "PENDING"
+                    }
+                }
             },
         });
 
@@ -50,6 +55,11 @@ export async function getOrders() {
                         }
                     }
                 }
+            },
+            statusHistory: {
+                orderBy: {
+                    createdAt: 'desc'
+                }
             }
         },
         orderBy: {
@@ -62,7 +72,12 @@ export async function updateOrderStatus(orderId: string, status: string) {
     try {
         await prisma.order.update({
             where: { id: orderId },
-            data: { status }
+            data: { 
+                status,
+                statusHistory: {
+                    create: { status }
+                }
+            }
         });
         revalidatePath("/admin");
         return { success: true };
@@ -85,11 +100,18 @@ export async function getAdminProducts() {
 export async function updateProduct(id: string, data: {
     brand?: string;
     name?: string;
+    gender?: string;
     category?: string;
     description?: string;
     mainImage?: string;
+<<<<<<< HEAD
     gender?: string;
     notes?: string;
+=======
+    images?: string; // JSON string
+    notes?: string;
+    accords?: string;
+>>>>>>> e2cc252d87f735fab65122ff7bc95d1e00588890
 }) {
     try {
         await prisma.perfume.update({
@@ -106,7 +128,22 @@ export async function updateProduct(id: string, data: {
     }
 }
 
+export async function deleteProduct(id: string) {
+    try {
+        await prisma.perfume.delete({
+            where: { id }
+        });
+        revalidatePath("/admin");
+        revalidatePath("/catalogo");
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to delete product:", error);
+        return { success: false };
+    }
+}
+
 export async function updateVariant(id: string, data: {
+    size?: string;
     price?: number;
     stock?: number;
 }) {
@@ -115,7 +152,8 @@ export async function updateVariant(id: string, data: {
             where: { id },
             data: {
                 ...data,
-                stock: data.stock !== undefined ? Number(data.stock) : undefined
+                stock: data.stock !== undefined ? Number(data.stock) : undefined,
+                price: data.price !== undefined ? Number(data.price) : undefined
             }
         });
         revalidatePath("/admin");
@@ -128,6 +166,43 @@ export async function updateVariant(id: string, data: {
     }
 }
 
+export async function createVariant(perfumeId: string, data: {
+    size: string;
+    price: number;
+    stock: number;
+}) {
+    try {
+        await prisma.variant.create({
+            data: {
+                ...data,
+                perfumeId
+            }
+        });
+        revalidatePath("/admin");
+        revalidatePath("/catalogo");
+        revalidatePath(`/producto/${perfumeId}`);
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to create variant:", error);
+        return { success: false };
+    }
+}
+
+export async function deleteVariant(id: string) {
+    try {
+        const variant = await prisma.variant.delete({
+            where: { id }
+        });
+        revalidatePath("/admin");
+        revalidatePath("/catalogo");
+        revalidatePath(`/producto/${variant.perfumeId}`);
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to delete variant:", error);
+        return { success: false };
+    }
+}
+
 export async function createProduct(data: {
     brand: string;
     name: string;
@@ -135,7 +210,12 @@ export async function createProduct(data: {
     description: string;
     mainImage: string;
     gender: string;
+<<<<<<< HEAD
     notes?: string;
+=======
+    images?: string;
+    accords?: string;
+>>>>>>> e2cc252d87f735fab65122ff7bc95d1e00588890
     variants: {
         size: string;
         price: number;
@@ -151,13 +231,19 @@ export async function createProduct(data: {
                 description: data.description,
                 mainImage: data.mainImage,
                 gender: data.gender,
+<<<<<<< HEAD
                 notes: data.notes || "",
                 images: "[]",
+=======
+                notes: "Salida: ; Corazón: ; Fondo: ",
+                accords: data.accords || "[]",
+                images: data.images || "[]",
+>>>>>>> e2cc252d87f735fab65122ff7bc95d1e00588890
                 variants: {
                     create: data.variants.map(v => ({
                         size: v.size,
-                        price: v.price,
-                        stock: v.stock
+                        price: Number(v.price),
+                        stock: Number(v.stock)
                     }))
                 }
             }
