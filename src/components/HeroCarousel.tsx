@@ -7,8 +7,8 @@ import Link from "next/link";
 interface CarouselImage {
     id: string;
     imageUrl: string;
-    title?: string;
-    subtitle?: string;
+    title?: string | null;
+    subtitle?: string | null;
 }
 
 export default function HeroCarousel({ images }: { images: CarouselImage[] }) {
