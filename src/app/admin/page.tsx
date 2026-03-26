@@ -3,18 +3,22 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { Clock, CheckCircle2, Truck, XCircle, Package, ShoppingCart, Edit2, Save, Camera } from 'lucide-react';
-import { getOrders, updateOrderStatus, getAdminProducts, updateProduct, updateVariant, createProduct } from '@/lib/actions';
+import { getOrders, updateOrderStatus, getAdminProducts, updateProduct, updateVariant, createProduct, loginAdmin, addVariant, getCarouselImages, updateCarouselImage, deleteCarouselImage } from '@/lib/actions';
 import { formatPrice } from '@/lib/formatters';
 
 export default function AdminPage() {
-    const [activeTab, setActiveTab] = useState<'orders' | 'inventory' | 'create'>('orders');
+    const [activeTab, setActiveTab] = useState<'orders' | 'inventory' | 'create' | 'carousel'>('orders');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [emailInput, setEmailInput] = useState('');
     const [passwordInput, setPasswordInput] = useState('');
     const [orders, setOrders] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
+    const [carouselImages, setCarouselImages] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [editingProduct, setEditingProduct] = useState<string | null>(null);
     const [editData, setEditData] = useState<any>({});
+    const [isAddingVariant, setIsAddingVariant] = useState<string | null>(null);
+    const [newVariantData, setNewVariantData] = useState({ size: '', price: 0, stock: 0 });
     const [newProductData, setNewProductData] = useState<any>({
         brand: '',
         name: '',
@@ -30,12 +34,22 @@ export default function AdminPage() {
     });
 
     useEffect(() => {
+        if (!isAuthenticated) return;
         if (activeTab === 'orders') {
             fetchOrders();
         } else if (activeTab === 'inventory') {
             fetchProducts();
+        } else if (activeTab === 'carousel') {
+            fetchCarousel();
         }
-    }, [activeTab]);
+    }, [activeTab, isAuthenticated]);
+
+    async function fetchCarousel() {
+        setIsLoading(true);
+        const data = await getCarouselImages();
+        setCarouselImages(data);
+        setIsLoading(false);
+    }
 
     async function fetchOrders() {
         setIsLoading(true);
@@ -64,10 +78,22 @@ export default function AdminPage() {
             brand: editData.brand,
             description: editData.description,
             mainImage: editData.mainImage,
+            category: editData.category,
+            gender: editData.gender,
+            notes: editData.notes,
         });
 
         if (result.success) {
             setEditingProduct(null);
+            fetchProducts();
+        }
+    }
+
+    async function handleAddVariant(perfumeId: string) {
+        const result = await addVariant(perfumeId, newVariantData);
+        if (result.success) {
+            setIsAddingVariant(null);
+            setNewVariantData({ size: '', price: 0, stock: 0 });
             fetchProducts();
         }
     }
@@ -109,12 +135,23 @@ export default function AdminPage() {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center p-6">
                 <div className="bg-card p-10 border border-border/20 max-w-md w-full glass">
-                    <h2 className="text-2xl font-serif text-center mb-8">Acceso Restringido</h2>
-                    <form onSubmit={(e) => {
+                    <h2 className="text-2xl font-serif text-center mb-8">Acceso Admin</h2>
+                    <form onSubmit={async (e) => {
                         e.preventDefault();
-                        if (passwordInput === 'perfumeria2024') setIsAuthenticated(true);
-                        else alert('Contraseña incorrecta');
+                        const result = await loginAdmin(emailInput, passwordInput);
+                        if (result.success) setIsAuthenticated(true);
+                        else alert(result.error);
                     }} className="space-y-6">
+                        <div>
+                            <label className="text-[10px] uppercase tracking-widest text-accent block mb-2">Email</label>
+                            <input 
+                                type="email" 
+                                value={emailInput} 
+                                onChange={e => setEmailInput(e.target.value)}
+                                className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground"
+                                placeholder="admin@perfumeria.com"
+                            />
+                        </div>
                         <div>
                             <label className="text-[10px] uppercase tracking-widest text-accent block mb-2">Contraseña</label>
                             <input 
@@ -127,6 +164,11 @@ export default function AdminPage() {
                         <button type="submit" className="w-full bg-accent text-accent-foreground py-3 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all premium-shadow">
                             Ingresar
                         </button>
+                        <div className="text-center pt-2">
+                            <button type="button" onClick={() => alert('Contacte al soporte técnico para restablecer su contraseña.')} className="text-[9px] uppercase tracking-widest text-muted hover:text-accent transition-colors">
+                                ¿Olvidaste tu contraseña?
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -163,13 +205,19 @@ export default function AdminPage() {
                             </div>
                         </button>
                         <button
-                            onClick={() => setActiveTab('create')}
-                            className={`px-6 py-2.5 text-[10px] uppercase tracking-widest transition-all ${activeTab === 'create' ? 'bg-accent text-accent-foreground' : 'text-muted hover:text-foreground'}`}
+                            onClick={() => setActiveTab('carousel')}
+                            className={`px-6 py-2.5 text-[10px] uppercase tracking-widest transition-all ${activeTab === 'carousel' ? 'bg-accent text-accent-foreground' : 'text-muted hover:text-foreground'}`}
                         >
                             <div className="flex items-center gap-2">
-                                <Save size={14} />
-                                <span>Nuevo</span>
+                                <Camera size={14} />
+                                <span>Carrusel</span>
                             </div>
+                        </button>
+                        <button
+                            onClick={() => setIsAuthenticated(false)}
+                            className="px-6 py-2.5 text-[10px] uppercase tracking-widest text-rose-500 hover:bg-rose-500/10 transition-all border-l border-border/20"
+                        >
+                            <span>Salir</span>
                         </button>
                     </div>
                 </header>
@@ -272,13 +320,51 @@ export default function AdminPage() {
                                             </div>
                                         </div>
 
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] uppercase tracking-widest text-accent">Categoría</label>
+                                                <select
+                                                    value={editData.category}
+                                                    onChange={(e) => setEditData({ ...editData, category: e.target.value })}
+                                                    className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground"
+                                                >
+                                                    <option value="Nicho">Nicho</option>
+                                                    <option value="Árabe">Árabe</option>
+                                                    <option value="Diseñador">Diseñador</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] uppercase tracking-widest text-accent">Género</label>
+                                                <select
+                                                    value={editData.gender}
+                                                    onChange={(e) => setEditData({ ...editData, gender: e.target.value })}
+                                                    className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground"
+                                                >
+                                                    <option value="Unisex">Unisex</option>
+                                                    <option value="Male">Hombre</option>
+                                                    <option value="Female">Mujer</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
                                         <div className="space-y-2">
                                             <label className="text-[10px] uppercase tracking-widest text-accent">Descripción</label>
                                             <textarea
-                                                rows={4}
+                                                rows={3}
                                                 value={editData.description}
                                                 onChange={(e) => setEditData({ ...editData, description: e.target.value })}
                                                 className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] uppercase tracking-widest text-accent">Notas Olfativas</label>
+                                            <textarea
+                                                rows={2}
+                                                value={editData.notes}
+                                                onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
+                                                className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
+                                                placeholder="Ej: Salida: Cítricos, Corazón: Rosa, Fondo: Ámbar"
                                             />
                                         </div>
 
@@ -369,12 +455,106 @@ export default function AdminPage() {
                                                         </div>
                                                     </div>
                                                 ))}
+
+                                                {/* Add Variant Toggle */}
+                                                {isAddingVariant === product.id ? (
+                                                    <div className="bg-accent/5 p-3 border border-accent/20 space-y-3">
+                                                        <input 
+                                                            placeholder="Medida (ej: 50ml)"
+                                                            className="w-full bg-background border border-border/20 text-[10px] p-2 focus:outline-none"
+                                                            onChange={(e) => setNewVariantData({...newVariantData, size: e.target.value})}
+                                                        />
+                                                        <div className="flex gap-2">
+                                                            <input 
+                                                                type="number" 
+                                                                placeholder="Precio"
+                                                                className="w-1/2 bg-background border border-border/20 text-[10px] p-2 focus:outline-none"
+                                                                onChange={(e) => setNewVariantData({...newVariantData, price: Number(e.target.value)})}
+                                                            />
+                                                            <input 
+                                                                type="number" 
+                                                                placeholder="Stock"
+                                                                className="w-1/2 bg-background border border-border/20 text-[10px] p-2 focus:outline-none"
+                                                                onChange={(e) => setNewVariantData({...newVariantData, stock: Number(e.target.value)})}
+                                                            />
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <button 
+                                                                onClick={() => handleAddVariant(product.id)}
+                                                                className="w-full bg-accent text-[9px] text-white py-1 uppercase tracking-widest"
+                                                            >
+                                                                Añadir
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => setIsAddingVariant(null)}
+                                                                className="w-full bg-card border border-border/20 text-[9px] py-1 uppercase tracking-widest"
+                                                            >
+                                                                X
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <button 
+                                                        onClick={() => setIsAddingVariant(product.id)}
+                                                        className="flex flex-col items-center justify-center p-3 border border-dashed border-border/30 hover:border-accent/40 hover:bg-accent/5 transition-all text-muted hover:text-accent group"
+                                                    >
+                                                        <span className="text-[10px] uppercase tracking-widest">+ Añadir Medida</span>
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
                                 )}
                             </div>
                         ))}
+                    </div>
+                ) : activeTab === 'carousel' ? (
+                    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-700">
+                        <div className="bg-card border border-border/20 p-8 glass">
+                            <h2 className="text-xl font-serif mb-6 text-foreground">Gestión de Carrusel (Máx 3 imágenes)</h2>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {[0, 1, 2].map((index) => {
+                                    const img = carouselImages.find(c => c.order === index);
+                                    return (
+                                        <div key={index} className="space-y-4 p-4 border border-border/10 bg-background/20 relative">
+                                            <div className="aspect-video bg-black/10 overflow-hidden relative group">
+                                                {img ? (
+                                                    <img src={img.imageUrl} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-[10px] text-muted uppercase tracking-widest">Vacío</div>
+                                                )}
+                                                {img && (
+                                                    <button 
+                                                        onClick={() => deleteCarouselImage(img.id).then(fetchCarousel)}
+                                                        className="absolute top-2 right-2 p-1 bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    >
+                                                        <XCircle size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <input 
+                                                type="text" 
+                                                placeholder="URL Imagen"
+                                                defaultValue={img?.imageUrl || ''}
+                                                className="w-full bg-background border border-border/20 p-2 text-[10px] focus:outline-none focus:border-accent"
+                                                onBlur={(e) => {
+                                                    if (e.target.value) {
+                                                        updateCarouselImage(img?.id || null, { 
+                                                            imageUrl: e.target.value, 
+                                                            order: index 
+                                                        }).then(fetchCarousel);
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <p className="mt-6 text-[9px] text-muted uppercase tracking-widest italic text-center">
+                                * Los cambios se aplican automáticamente al salir del campo de texto (Blur).
+                            </p>
+                        </div>
                     </div>
                 ) : (
                     /* CREATE TAB */
@@ -436,10 +616,21 @@ export default function AdminPage() {
                                 <div className="space-y-2">
                                     <label className="text-[10px] uppercase tracking-widest text-accent">Descripción</label>
                                     <textarea
-                                        rows={4}
+                                        rows={3}
                                         placeholder="Describe la fragancia..."
                                         value={newProductData.description}
                                         onChange={(e) => setNewProductData({ ...newProductData, description: e.target.value })}
+                                        className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] uppercase tracking-widest text-accent">Notas Olfativas</label>
+                                    <textarea
+                                        rows={2}
+                                        placeholder="Salida: ..., Corazón: ..., Fondo: ..."
+                                        value={newProductData.notes}
+                                        onChange={(e) => setNewProductData({ ...newProductData, notes: e.target.value })}
                                         className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
                                     />
                                 </div>

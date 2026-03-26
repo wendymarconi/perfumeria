@@ -1,7 +1,8 @@
 import Navbar from "@/components/Navbar";
-import HeroSection from "@/components/HeroSection";
+import HeroCarousel from "@/components/HeroCarousel";
 import ProductCard from "@/components/ProductCard";
 import { prisma } from "@/lib/prisma";
+import { getCarouselImages } from "@/lib/actions";
 
 export default async function Home() {
   const featuredPerfumes = await prisma.perfume.findMany({
@@ -16,12 +17,14 @@ export default async function Home() {
     }
   });
 
+  const carouselImages = await getCarouselImages();
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
       <main>
-        <HeroSection />
+        <HeroCarousel images={carouselImages} />
 
         <section className="max-w-7xl mx-auto px-6 py-24 md:py-32">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
