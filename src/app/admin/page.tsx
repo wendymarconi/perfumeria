@@ -551,7 +551,7 @@ export default function AdminPage() {
                                                 <label className="text-[10px] uppercase tracking-widest text-accent">Marca</label>
                                                 <input
                                                     type="text"
-                                                    value={editData.brand}
+                                                    value={editData.brand || ''}
                                                     onChange={(e) => setEditData({ ...editData, brand: e.target.value })}
                                                     className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground"
                                                 />
@@ -560,7 +560,7 @@ export default function AdminPage() {
                                                 <label className="text-[10px] uppercase tracking-widest text-accent">Nombre</label>
                                                 <input
                                                     type="text"
-                                                    value={editData.name}
+                                                    value={editData.name || ''}
                                                     onChange={(e) => setEditData({ ...editData, name: e.target.value })}
                                                     className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground"
                                                 />
@@ -571,7 +571,7 @@ export default function AdminPage() {
                                             <div className="space-y-2">
                                                 <label className="text-[10px] uppercase tracking-widest text-accent">Categoría</label>
                                                 <select
-                                                    value={editData.category}
+                                                    value={editData.category || ''}
                                                     onChange={(e) => setEditData({ ...editData, category: e.target.value })}
                                                     className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground"
                                                 >
@@ -583,7 +583,7 @@ export default function AdminPage() {
                                             <div className="space-y-2">
                                                 <label className="text-[10px] uppercase tracking-widest text-accent">Género</label>
                                                 <select
-                                                    value={editData.gender}
+                                                    value={editData.gender || ''}
                                                     onChange={(e) => setEditData({ ...editData, gender: e.target.value })}
                                                     className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground"
                                                 >
@@ -598,7 +598,7 @@ export default function AdminPage() {
                                             <label className="text-[10px] uppercase tracking-widest text-accent">Descripción</label>
                                             <textarea
                                                 rows={3}
-                                                value={editData.description}
+                                                value={editData.description || ''}
                                                 onChange={(e) => setEditData({ ...editData, description: e.target.value })}
                                                 className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
                                             />
@@ -608,7 +608,7 @@ export default function AdminPage() {
                                             <label className="text-[10px] uppercase tracking-widest text-accent">Notas Olfativas</label>
                                             <textarea
                                                 rows={2}
-                                                value={editData.notes}
+                                                value={editData.notes || ''}
                                                 onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
                                                 className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
                                                 placeholder="Ej: Salida: Cítricos, Corazón: Rosa, Fondo: Ámbar"
@@ -620,7 +620,7 @@ export default function AdminPage() {
                                             <textarea
                                                 rows={2}
                                                 placeholder="cítrico, dulce, floral, amaderado"
-                                                value={editData.accords}
+                                                value={editData.accords || ''}
                                                 onChange={(e) => setEditData({ ...editData, accords: e.target.value })}
                                                 className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
                                             />
@@ -632,7 +632,7 @@ export default function AdminPage() {
                                             </div>
                                             <input
                                                 type="text"
-                                                value={editData.mainImage}
+                                                value={editData.mainImage || ''}
                                                 onChange={(e) => setEditData({ ...editData, mainImage: e.target.value })}
                                                 className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground"
                                             />
