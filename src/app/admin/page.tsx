@@ -943,7 +943,7 @@ export default function AdminPage() {
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-end mb-1">
                                         <label className="text-[10px] uppercase tracking-widest text-accent">URL Imagen Principal</label>
-                                        <span className="text-[9px] text-muted italic">Tip: Click derecho > Copiar dirección de imagen</span>
+                                        <span className="text-[9px] text-muted italic">Tip: Click derecho &gt; Copiar dirección de imagen</span>
                                     </div>
                                     <input
                                         type="text"
