@@ -1,10 +1,18 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Navbar from '@/components/Navbar';
-<<<<<<< HEAD
-import { Clock, CheckCircle2, Truck, XCircle, Package, ShoppingCart, Edit2, Save, Camera } from 'lucide-react';
-import { getOrders, updateOrderStatus, getAdminProducts, updateProduct, updateVariant, createProduct, loginAdmin, addVariant, getCarouselImages, updateCarouselImage, deleteCarouselImage } from '@/lib/actions';
+import { 
+    Clock, CheckCircle2, Truck, XCircle, Package, ShoppingCart, 
+    Edit2, Save, Camera, Upload, Trash, PlusCircle, MinusCircle, 
+    Plus, XCircle as XCircleIcon 
+} from 'lucide-react';
+import { 
+    getOrders, updateOrderStatus, getAdminProducts, updateProduct, 
+    updateVariant, createProduct, loginAdmin, addVariant, 
+    getCarouselImages, updateCarouselImage, deleteCarouselImage, 
+    deleteProduct, deleteVariant 
+} from '@/lib/actions';
 import { formatPrice } from '@/lib/formatters';
 
 export default function AdminPage() {
@@ -12,37 +20,29 @@ export default function AdminPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [emailInput, setEmailInput] = useState('');
     const [passwordInput, setPasswordInput] = useState('');
-=======
-import { Clock, CheckCircle2, Truck, XCircle, ChevronRight, Package, ShoppingCart, Edit2, Save, Trash2, Camera, Upload, Image as ImageIcon, Plus, Trash, PlusCircle, MinusCircle } from 'lucide-react';
-import { getOrders, updateOrderStatus, getAdminProducts, updateProduct, updateVariant, createProduct, deleteProduct, createVariant, deleteVariant } from '@/lib/actions';
-import { formatPrice } from '@/lib/formatters';
-
-export default function AdminPage() {
-    const [activeTab, setActiveTab] = useState<'orders' | 'inventory' | 'create'>('orders');
->>>>>>> e2cc252d87f735fab65122ff7bc95d1e00588890
+    
     const [orders, setOrders] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
     const [carouselImages, setCarouselImages] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [editingProduct, setEditingProduct] = useState<string | null>(null);
     const [editData, setEditData] = useState<any>({});
-<<<<<<< HEAD
     const [isAddingVariant, setIsAddingVariant] = useState<string | null>(null);
     const [newVariantData, setNewVariantData] = useState({ size: '', price: 0, stock: 0 });
-=======
-    const fileInputRef = React.useRef<HTMLInputElement>(null);
-    const editFileInputRef = React.useRef<HTMLInputElement>(null);
     
-    // Filtros de Pedidos
-    const [statusFilter, setStatusFilter] = useState('ALL');
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const editFileInputRef = useRef<HTMLInputElement>(null);
 
     // Filtros de Inventario
     const [searchName, setSearchName] = useState('');
     const [searchBrand, setSearchBrand] = useState('');
     const [searchCategory, setSearchCategory] = useState('');
     const [searchGender, setSearchGender] = useState('');
+    
+    // Filtros de Pedidos
+    const [statusFilter, setStatusFilter] = useState('ALL');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     const filteredProducts = products.filter((p: any) => {
         const matchName = searchName === '' || p.name.toLowerCase().includes(searchName.toLowerCase());
@@ -60,12 +60,12 @@ export default function AdminPage() {
         'CANCELLED': 'Cancelado',
     };
 
->>>>>>> e2cc252d87f735fab65122ff7bc95d1e00588890
     const [newProductData, setNewProductData] = useState<any>({
         brand: '',
         name: '',
         category: 'Nicho',
         description: '',
+        notes: '',
         mainImage: '',
         images: '[]',
         accords: '',
@@ -122,13 +122,9 @@ export default function AdminPage() {
             notes: editData.notes,
             accords: editData.accords,
             mainImage: editData.mainImage,
-<<<<<<< HEAD
             category: editData.category,
             gender: editData.gender,
-            notes: editData.notes,
-=======
             images: editData.images
->>>>>>> e2cc252d87f735fab65122ff7bc95d1e00588890
         });
 
         if (result.success) {
@@ -137,19 +133,6 @@ export default function AdminPage() {
         }
     }
 
-<<<<<<< HEAD
-    async function handleAddVariant(perfumeId: string) {
-        const result = await addVariant(perfumeId, newVariantData);
-        if (result.success) {
-            setIsAddingVariant(null);
-            setNewVariantData({ size: '', price: 0, stock: 0 });
-            fetchProducts();
-        }
-    }
-
-    async function handleUpdateVariant(variantId: string, field: 'price' | 'stock', value: number) {
-        const result = await updateVariant(variantId, { [field]: Number(value) });
-=======
     async function handleDeleteProduct(id: string) {
         if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
             const result = await deleteProduct(id);
@@ -159,16 +142,17 @@ export default function AdminPage() {
         }
     }
 
-    async function handleUpdateVariant(variantId: string, field: 'size' | 'price' | 'stock', value: any) {
-        const result = await updateVariant(variantId, { [field]: field === 'size' ? value : Number(value) });
->>>>>>> e2cc252d87f735fab65122ff7bc95d1e00588890
+    async function handleAddVariant(perfumeId: string) {
+        const result = await addVariant(perfumeId, newVariantData);
         if (result.success) {
+            setIsAddingVariant(null);
+            setNewVariantData({ size: '', price: 0, stock: 0 });
             fetchProducts();
         }
     }
 
-    async function handleAddVariant(productId: string) {
-        const result = await createVariant(productId, { size: 'Nueva Medida', price: 0, stock: 0 });
+    async function handleUpdateVariant(variantId: string, field: 'price' | 'stock' | 'size', value: any) {
+        const result = await updateVariant(variantId, { [field]: (field === 'price' || field === 'stock') ? Number(value) : value });
         if (result.success) {
             fetchProducts();
         }
@@ -193,12 +177,10 @@ export default function AdminPage() {
         if (result.success) {
             setActiveTab('inventory');
             setNewProductData({
-                brand: '', name: '', category: 'Nicho', description: '', mainImage: '', gender: 'Unisex',
+                brand: '', name: '', category: 'Nicho', description: '', notes: '', mainImage: '', gender: 'Unisex',
                 images: '[]', accords: '',
                 variants: [
-                    { size: '5ml', price: 0, stock: 10 },
-                    { size: '10ml', price: 0, stock: 10 },
-                    { size: '100ml', price: 0, stock: 5 }
+                    { size: '5ml', price: 0, stock: 10 }
                 ]
             });
         }
@@ -264,7 +246,7 @@ export default function AdminPage() {
             default: return <Clock size={16} className="text-gray-500" />;
         }
     };
-<<<<<<< HEAD
+
     if (!isAuthenticated) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -298,19 +280,12 @@ export default function AdminPage() {
                         <button type="submit" className="w-full bg-accent text-accent-foreground py-3 text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all premium-shadow">
                             Ingresar
                         </button>
-                        <div className="text-center pt-2">
-                            <button type="button" onClick={() => alert('Contacte al soporte técnico para restablecer su contraseña.')} className="text-[9px] uppercase tracking-widest text-muted hover:text-accent transition-colors">
-                                ¿Olvidaste tu contraseña?
-                            </button>
-                        </div>
                     </form>
                 </div>
             </div>
         );
     }
-=======
 
->>>>>>> e2cc252d87f735fab65122ff7bc95d1e00588890
     return (
         <div className="min-h-screen bg-background">
             <Navbar />
@@ -533,8 +508,8 @@ export default function AdminPage() {
                                     >
                                         <option value="">Todas</option>
                                         <option value="Nicho">Nicho</option>
+                                        <option value="Árabe">Árabe</option>
                                         <option value="Diseñador">Diseñador</option>
-                                        <option value="Arabe">Árabe</option>
                                     </select>
                                 </div>
                                 <div className="space-y-1">
@@ -632,7 +607,6 @@ export default function AdminPage() {
                                         <div className="space-y-2">
                                             <label className="text-[10px] uppercase tracking-widest text-accent">Notas Olfativas</label>
                                             <textarea
-<<<<<<< HEAD
                                                 rows={2}
                                                 value={editData.notes}
                                                 onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
@@ -642,108 +616,36 @@ export default function AdminPage() {
                                         </div>
 
                                         <div className="space-y-2">
-                                            <label className="text-[10px] uppercase tracking-widest text-accent">URL Imagen Principal</label>
+                                            <label className="text-[10px] uppercase tracking-widest text-accent">Acordes Principales</label>
+                                            <textarea
+                                                rows={2}
+                                                placeholder="cítrico, dulce, floral, amaderado"
+                                                value={editData.accords}
+                                                onChange={(e) => setEditData({ ...editData, accords: e.target.value })}
+                                                className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-end mb-1">
+                                                <label className="text-[10px] uppercase tracking-widest text-accent">URL Imagen Principal</label>
+                                            </div>
                                             <input
                                                 type="text"
                                                 value={editData.mainImage}
                                                 onChange={(e) => setEditData({ ...editData, mainImage: e.target.value })}
                                                 className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground"
-=======
-                                                rows={3}
-                                                placeholder="Salida: ...; Corazón: ...; Fondo: ..."
-                                                value={editData.notes}
-                                                onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
-                                                className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
->>>>>>> e2cc252d87f735fab65122ff7bc95d1e00588890
                                             />
-                                            <p className="text-[8px] text-muted italic">Usa punto y coma (;) para separar las fases y dos puntos (:) para el título.</p>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] uppercase tracking-widest text-accent">Acordes Principales</label>
+                                            
+                                            <div className="flex justify-between items-end mb-1 pt-4">
+                                                <label className="text-[10px] uppercase tracking-widest text-accent">Imágenes Adicionales (JSON)</label>
+                                            </div>
                                             <textarea
                                                 rows={2}
-                                                placeholder="cítrico, dulce:80, floral, amaderado"
-                                                value={editData.accords}
-                                                onChange={(e) => setEditData({ ...editData, accords: e.target.value })}
-                                                className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
+                                                value={editData.images}
+                                                onChange={(e) => setEditData({ ...editData, images: e.target.value })}
+                                                className="w-full bg-background border border-border/30 p-3 text-[10px] focus:outline-none focus:border-accent text-foreground font-mono"
                                             />
-                                            <p className="text-[8px] text-muted italic">Separa por comas. Opcional el peso (0-100) ej: cítrico:90.</p>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between items-end mb-1">
-                                                <label className="text-[10px] uppercase tracking-widest text-accent">Imágenes del Perfume (Máx 5)</label>
-                                                <button 
-                                                    onClick={() => editFileInputRef.current?.click()}
-                                                    disabled={JSON.parse(editData.images || '[]').length >= 5}
-                                                    className="text-[10px] uppercase tracking-widest text-accent hover:text-white flex items-center gap-1 transition-colors disabled:opacity-50"
-                                                >
-                                                    <Upload size={14} />
-                                                    <span>Añadir Imagen</span>
-                                                </button>
-                                            </div>
-                                            <input 
-                                                type="file" 
-                                                ref={editFileInputRef} 
-                                                className="hidden" 
-                                                accept="image/*"
-                                                onChange={(e) => handleImageUpload(e, true)}
-                                            />
-
-                                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                                                {JSON.parse(editData.images || '[]').map((img: string, idx: number) => (
-                                                    <div key={idx} className="relative aspect-square border border-border/30 overflow-hidden group bg-white p-2 text-center flex items-center justify-center">
-                                                        <img 
-                                                            src={img} 
-                                                            alt={`Preview ${idx + 1}`} 
-                                                            className="max-w-full max-h-full object-contain"
-                                                        />
-                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                            <button 
-                                                                onClick={() => handleRemoveImage(idx, true)}
-                                                                className="bg-rose-500 text-white p-1 rounded-full"
-                                                            >
-                                                                <Trash size={12} />
-                                                            </button>
-                                                        </div>
-                                                        {idx === 0 && (
-                                                            <div className="absolute top-0 left-0 bg-accent text-accent-foreground text-[8px] px-1.5 py-0.5 uppercase tracking-tighter font-bold">Principal</div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                                {JSON.parse(editData.images || '[]').length < 5 && (
-                                                    <button 
-                                                        onClick={() => editFileInputRef.current?.click()}
-                                                        className="aspect-square border border-dashed border-border/30 flex flex-col items-center justify-center gap-2 text-muted hover:text-accent hover:border-accent transition-all bg-background/20"
-                                                    >
-                                                        <PlusCircle size={20} />
-                                                        <span className="text-[8px] uppercase tracking-widest font-medium">Subir</span>
-                                                    </button>
-                                                )}
-                                            </div>
-                                            <div className="space-y-2">
-                                                <input
-                                                    type="text"
-                                                    placeholder="O pega una URL de imagen aquí para añadir..."
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            const value = (e.target as HTMLInputElement).value;
-                                                            if (value) {
-                                                                const currentImages = JSON.parse(editData.images || '[]');
-                                                                if (currentImages.length < 5) {
-                                                                    currentImages.push(value);
-                                                                    setEditData({ ...editData, images: JSON.stringify(currentImages), mainImage: currentImages[0] });
-                                                                    (e.target as HTMLInputElement).value = '';
-                                                                } else {
-                                                                    alert('Máximo 5 imágenes permitidas.');
-                                                                }
-                                                            }
-                                                        }
-                                                    }}
-                                                    className="w-full bg-background border border-border/30 p-3 text-xs focus:outline-none focus:border-accent text-foreground"
-                                                />
-                                            </div>
                                         </div>
 
                                         <div className="flex justify-end gap-4 pt-4 border-t border-border/10">
@@ -788,7 +690,7 @@ export default function AdminPage() {
                                                             setEditingProduct(product.id);
                                                             setEditData({
                                                                 ...product,
-                                                                images: product.images || JSON.stringify([product.mainImage])
+                                                                images: product.images || '[]'
                                                             });
                                                         }}
                                                         className="p-2 text-muted hover:text-accent transition-colors"
@@ -799,16 +701,12 @@ export default function AdminPage() {
                                                         onClick={() => handleDeleteProduct(product.id)}
                                                         className="p-2 text-muted hover:text-rose-500 transition-colors"
                                                     >
-                                                        <Trash2 size={16} />
+                                                        <Trash size={16} />
                                                     </button>
                                                 </div>
                                             </div>
 
-                                            <p className="text-sm text-muted font-sans line-clamp-2 italic mb-6">
-                                                "{product.description}"
-                                            </p>
-
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 border-t border-border/5 pt-6">
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-border/5 pt-6">
                                                 {product.variants.map((variant: any) => (
                                                     <div key={variant.id} className="bg-background/40 p-3 border border-border/10">
                                                         <div className="flex justify-between items-center mb-2">
@@ -850,7 +748,6 @@ export default function AdminPage() {
                                                         </div>
                                                     </div>
                                                 ))}
-<<<<<<< HEAD
 
                                                 {/* Add Variant Toggle */}
                                                 {isAddingVariant === product.id ? (
@@ -897,15 +794,6 @@ export default function AdminPage() {
                                                         <span className="text-[10px] uppercase tracking-widest">+ Añadir Medida</span>
                                                     </button>
                                                 )}
-=======
-                                                <button 
-                                                    onClick={() => handleAddVariant(product.id)}
-                                                    className="border border-dashed border-border/30 p-3 flex flex-col items-center justify-center gap-1 text-muted hover:text-accent hover:border-accent transition-all group"
-                                                >
-                                                    <Plus size={14} />
-                                                    <span className="text-[9px] uppercase tracking-widest font-medium">Añadir Medida</span>
-                                                </button>
->>>>>>> e2cc252d87f735fab65122ff7bc95d1e00588890
                                             </div>
                                         </div>
                                     </div>
@@ -1033,7 +921,6 @@ export default function AdminPage() {
                                 <div className="space-y-2">
                                     <label className="text-[10px] uppercase tracking-widest text-accent">Notas Olfativas</label>
                                     <textarea
-<<<<<<< HEAD
                                         rows={2}
                                         placeholder="Salida: ..., Corazón: ..., Fondo: ..."
                                         value={newProductData.notes}
@@ -1043,9 +930,20 @@ export default function AdminPage() {
                                 </div>
 
                                 <div className="space-y-2">
+                                    <label className="text-[10px] uppercase tracking-widest text-accent">Acordes Principales</label>
+                                    <textarea
+                                        rows={2}
+                                        placeholder="cítrico, dulce, floral, amaderado"
+                                        value={newProductData.accords}
+                                        onChange={(e) => setNewProductData({ ...newProductData, accords: e.target.value })}
+                                        className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
+                                    />
+                                </div>
+
+                                <div className="space-y-4">
                                     <div className="flex justify-between items-end mb-1">
                                         <label className="text-[10px] uppercase tracking-widest text-accent">URL Imagen Principal</label>
-                                        <span className="text-[9px] text-muted italic">Tip: Click derecho &gt; Copiar dirección de imagen</span>
+                                        <span className="text-[9px] text-muted italic">Tip: Click derecho > Copiar dirección de imagen</span>
                                     </div>
                                     <input
                                         type="text"
@@ -1053,106 +951,7 @@ export default function AdminPage() {
                                         value={newProductData.mainImage}
                                         onChange={(e) => setNewProductData({ ...newProductData, mainImage: e.target.value })}
                                         className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground"
-=======
-                                        rows={3}
-                                        placeholder="Salida: ...; Corazón: ...; Fondo: ..."
-                                        value={newProductData.notes}
-                                        onChange={(e) => setNewProductData({ ...newProductData, notes: e.target.value })}
-                                        className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
->>>>>>> e2cc252d87f735fab65122ff7bc95d1e00588890
                                     />
-                                    <p className="text-[9px] text-muted italic">Ejemplo: Salida: Cítricos; Corazón: Jazmín; Fondo: Vainilla</p>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[10px] uppercase tracking-widest text-accent">Acordes Principales</label>
-                                    <textarea
-                                        rows={2}
-                                        placeholder="cítrico, dulce:80, floral, amaderado"
-                                        value={newProductData.accords}
-                                        onChange={(e) => setNewProductData({ ...newProductData, accords: e.target.value })}
-                                        className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
-                                    />
-                                    <p className="text-[9px] text-muted italic">Separa los acordes por comas (ej: cítrico, dulce, floral).</p>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-end mb-1">
-                                        <label className="text-[10px] uppercase tracking-widest text-accent">Imágenes del Perfume (Máx 5)</label>
-                                        <div className="flex gap-4">
-                                            <button 
-                                                onClick={() => fileInputRef.current?.click()}
-                                                disabled={JSON.parse(newProductData.images || '[]').length >= 5}
-                                                className="text-[10px] uppercase tracking-widest text-accent hover:text-white flex items-center gap-1 transition-colors disabled:opacity-50"
-                                            >
-                                                <Upload size={14} />
-                                                <span>Añadir Imagen</span>
-                                            </button>
-                                        </div>
-                                        <input 
-                                            type="file" 
-                                            ref={fileInputRef} 
-                                            className="hidden" 
-                                            accept="image/*"
-                                            onChange={(e) => handleImageUpload(e, false)}
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                                        {JSON.parse(newProductData.images || '[]').map((img: string, idx: number) => (
-                                            <div key={idx} className="relative aspect-square border border-border/30 overflow-hidden group bg-white p-2 text-center flex items-center justify-center">
-                                                <img 
-                                                    src={img} 
-                                                    alt={`Preview ${idx + 1}`} 
-                                                    className="max-w-full max-h-full object-contain"
-                                                />
-                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                    <button 
-                                                        onClick={() => handleRemoveImage(idx, false)}
-                                                        className="bg-rose-500 text-white p-1 rounded-full"
-                                                    >
-                                                        <Trash size={12} />
-                                                    </button>
-                                                </div>
-                                                {idx === 0 && (
-                                                    <div className="absolute top-0 left-0 bg-accent text-accent-foreground text-[8px] px-1.5 py-0.5 uppercase tracking-tighter font-bold">Principal</div>
-                                                )}
-                                            </div>
-                                        ))}
-                                        {JSON.parse(newProductData.images || '[]').length < 5 && (
-                                            <button 
-                                                onClick={() => fileInputRef.current?.click()}
-                                                className="aspect-square border border-dashed border-border/30 flex flex-col items-center justify-center gap-2 text-muted hover:text-accent hover:border-accent transition-all bg-background/20"
-                                            >
-                                                <PlusCircle size={20} />
-                                                <span className="text-[8px] uppercase tracking-widest font-medium">Subir</span>
-                                            </button>
-                                        )}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <input
-                                            type="text"
-                                            placeholder="O pega una URL de imagen aquí para añadir..."
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    const value = (e.target as HTMLInputElement).value;
-                                                    if (value) {
-                                                        const currentImages = JSON.parse(newProductData.images || '[]');
-                                                        if (currentImages.length < 5) {
-                                                            currentImages.push(value);
-                                                            const mainImg = currentImages[0];
-                                                            setNewProductData({ ...newProductData, images: JSON.stringify(currentImages), mainImage: mainImg });
-                                                            (e.target as HTMLInputElement).value = '';
-                                                        } else {
-                                                            alert('Máximo 5 imágenes permitidas.');
-                                                        }
-                                                    }
-                                                }
-                                            }}
-                                            className="w-full bg-background border border-border/30 p-3 text-xs focus:outline-none focus:border-accent text-foreground"
-                                        />
-                                        <p className="text-[9px] text-muted italic">La primera imagen será la principal.</p>
-                                    </div>
                                 </div>
 
                                 <div className="space-y-4 pt-4 border-t border-border/10">

@@ -104,14 +104,9 @@ export async function updateProduct(id: string, data: {
     category?: string;
     description?: string;
     mainImage?: string;
-<<<<<<< HEAD
-    gender?: string;
-    notes?: string;
-=======
-    images?: string; // JSON string
+    images?: string;
     notes?: string;
     accords?: string;
->>>>>>> e2cc252d87f735fab65122ff7bc95d1e00588890
 }) {
     try {
         await prisma.perfume.update({
@@ -210,12 +205,9 @@ export async function createProduct(data: {
     description: string;
     mainImage: string;
     gender: string;
-<<<<<<< HEAD
     notes?: string;
-=======
     images?: string;
     accords?: string;
->>>>>>> e2cc252d87f735fab65122ff7bc95d1e00588890
     variants: {
         size: string;
         price: number;
@@ -231,14 +223,9 @@ export async function createProduct(data: {
                 description: data.description,
                 mainImage: data.mainImage,
                 gender: data.gender,
-<<<<<<< HEAD
                 notes: data.notes || "",
-                images: "[]",
-=======
-                notes: "Salida: ; Corazón: ; Fondo: ",
                 accords: data.accords || "[]",
                 images: data.images || "[]",
->>>>>>> e2cc252d87f735fab65122ff7bc95d1e00588890
                 variants: {
                     create: data.variants.map(v => ({
                         size: v.size,
