@@ -5,7 +5,7 @@ import Navbar from '@/components/Navbar';
 import { 
     Clock, CheckCircle2, Truck, XCircle, Package, ShoppingCart, 
     Edit2, Save, Camera, Upload, Trash, PlusCircle, MinusCircle, 
-    Plus, XCircle as XCircleIcon 
+    Plus, XCircle as XCircleIcon, ChevronLeft, ChevronRight 
 } from 'lucide-react';
 import { 
     getOrders, updateOrderStatus, getAdminProducts, updateProduct, 
@@ -44,6 +44,10 @@ export default function AdminPage() {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
 
+    // Paginación
+    const [itemsPerPage, setItemsPerPage] = useState<number | 'all'>(10);
+    const [currentPage, setCurrentPage] = useState(1);
+
     const filteredProducts = products.filter((p: any) => {
         const matchName = searchName === '' || p.name.toLowerCase().includes(searchName.toLowerCase());
         const matchBrand = searchBrand === '' || p.brand.toLowerCase().includes(searchBrand.toLowerCase());
@@ -51,6 +55,16 @@ export default function AdminPage() {
         const matchGender = searchGender === '' || p.gender === searchGender;
         return matchName && matchBrand && matchCategory && matchGender;
     });
+
+    const totalPages = itemsPerPage === 'all' ? 1 : Math.ceil(filteredProducts.length / itemsPerPage);
+    const paginatedProducts = itemsPerPage === 'all' 
+        ? filteredProducts 
+        : filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    // Reset page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchName, searchBrand, searchCategory, searchGender, itemsPerPage]);
     
     const statusTranslations: Record<string, string> = {
         'PENDING': 'Pendiente',
@@ -186,6 +200,24 @@ export default function AdminPage() {
         }
         setIsLoading(false);
     }
+
+    const handleCarouselUpload = (e: React.ChangeEvent<HTMLInputElement>, index: number, id: string | null) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            alert('La imagen es demasiado grande. Máximo 2MB.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+            const base64String = reader.result as string;
+            await updateCarouselImage(id, { imageUrl: base64String, order: index });
+            fetchCarousel();
+        };
+        reader.readAsDataURL(file);
+    };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false, index?: number) => {
         const file = e.target.files?.[0];
@@ -525,6 +557,19 @@ export default function AdminPage() {
                                         <option value="Unisex">Unisex</option>
                                     </select>
                                 </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] uppercase tracking-widest text-muted">Mostrar</label>
+                                    <select
+                                        value={itemsPerPage}
+                                        onChange={(e) => setItemsPerPage(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                                        className="w-full bg-background border border-border/30 px-3 py-2 text-xs focus:outline-none focus:border-accent text-foreground"
+                                    >
+                                        <option value={5}>5 por página</option>
+                                        <option value={10}>10 por página</option>
+                                        <option value={20}>20 por página</option>
+                                        <option value="all">Ver Todos</option>
+                                    </select>
+                                </div>
                             </div>
                             {(searchName || searchBrand || searchCategory || searchGender) && (
                                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/10">
@@ -539,9 +584,8 @@ export default function AdminPage() {
                             )}
                         </div>
 
-                        {/* Product List */}
                         <div className="space-y-4">
-                        {filteredProducts.map((product: any) => (
+                        {paginatedProducts.map((product: any) => (
                             <div key={product.id} className="bg-card border border-border/20 p-8 hover:border-accent/40 transition-all duration-500">
                                 {editingProduct === product.id ? (
                                     /* Edit Mode */
@@ -628,23 +672,18 @@ export default function AdminPage() {
 
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-end mb-1">
-                                                <label className="text-[10px] uppercase tracking-widest text-accent">URL Imagen Principal</label>
+                                                <label className="text-[10px] uppercase tracking-widest text-accent">Imagen Principal</label>
+                                                <label className="text-[9px] text-accent uppercase tracking-widest cursor-pointer hover:underline flex items-center gap-1">
+                                                    <Upload size={10} /> Adjuntar
+                                                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, true)} />
+                                                </label>
                                             </div>
                                             <input
                                                 type="text"
                                                 value={editData.mainImage || ''}
                                                 onChange={(e) => setEditData({ ...editData, mainImage: e.target.value })}
                                                 className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground"
-                                            />
-                                            
-                                            <div className="flex justify-between items-end mb-1 pt-4">
-                                                <label className="text-[10px] uppercase tracking-widest text-accent">Imágenes Adicionales (JSON)</label>
-                                            </div>
-                                            <textarea
-                                                rows={2}
-                                                value={editData.images}
-                                                onChange={(e) => setEditData({ ...editData, images: e.target.value })}
-                                                className="w-full bg-background border border-border/30 p-3 text-[10px] focus:outline-none focus:border-accent text-foreground font-mono"
+                                                placeholder="URL de la imagen"
                                             />
                                         </div>
 
@@ -801,6 +840,29 @@ export default function AdminPage() {
                             </div>
                         ))}
                         </div>
+
+                        {/* Pagination Controls */}
+                        {itemsPerPage !== 'all' && totalPages > 1 && (
+                            <div className="flex justify-center items-center gap-4 pt-8">
+                                <button
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(prev => prev - 1)}
+                                    className="p-2 text-muted hover:text-accent disabled:opacity-20 transition-colors"
+                                >
+                                    <ChevronLeft size={20} />
+                                </button>
+                                <span className="text-[10px] uppercase tracking-widest font-medium">
+                                    Página <span className="text-accent">{currentPage}</span> de {totalPages}
+                                </span>
+                                <button
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => setCurrentPage(prev => prev + 1)}
+                                    className="p-2 text-muted hover:text-accent disabled:opacity-20 transition-colors"
+                                >
+                                    <ChevronRight size={20} />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 ) : activeTab === 'carousel' ? (
                     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-700">
@@ -827,20 +889,31 @@ export default function AdminPage() {
                                                     </button>
                                                 )}
                                             </div>
-                                            <input 
-                                                type="text" 
-                                                placeholder="URL Imagen"
-                                                defaultValue={img?.imageUrl || ''}
-                                                className="w-full bg-background border border-border/20 p-2 text-[10px] focus:outline-none focus:border-accent"
-                                                onBlur={(e) => {
-                                                    if (e.target.value) {
-                                                        updateCarouselImage(img?.id || null, { 
-                                                            imageUrl: e.target.value, 
-                                                            order: index 
-                                                        }).then(fetchCarousel);
-                                                    }
-                                                }}
-                                            />
+                                            <div className="flex justify-between items-center px-1">
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="URL Imagen"
+                                                    defaultValue={img?.imageUrl || ''}
+                                                    className="flex-grow bg-background border border-border/20 p-2 text-[10px] focus:outline-none focus:border-accent"
+                                                    onBlur={(e) => {
+                                                        if (e.target.value) {
+                                                            updateCarouselImage(img?.id || null, { 
+                                                                imageUrl: e.target.value, 
+                                                                order: index 
+                                                            }).then(fetchCarousel);
+                                                        }
+                                                    }}
+                                                />
+                                                <label className="ml-2 p-2 bg-accent/10 text-accent hover:bg-accent hover:text-white transition-all cursor-pointer">
+                                                    <Upload size={12} />
+                                                    <input 
+                                                        type="file" 
+                                                        className="hidden" 
+                                                        accept="image/*" 
+                                                        onChange={(e) => handleCarouselUpload(e, index, img?.id || null)} 
+                                                    />
+                                                </label>
+                                            </div>
                                         </div>
                                     );
                                 })}
@@ -942,12 +1015,15 @@ export default function AdminPage() {
 
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-end mb-1">
-                                        <label className="text-[10px] uppercase tracking-widest text-accent">URL Imagen Principal</label>
-                                        <span className="text-[9px] text-muted italic">Tip: Click derecho &gt; Copiar dirección de imagen</span>
+                                        <label className="text-[10px] uppercase tracking-widest text-accent">Imagen Principal</label>
+                                        <label className="text-[9px] text-accent uppercase tracking-widest cursor-pointer hover:underline flex items-center gap-1">
+                                            <Upload size={10} /> Adjuntar
+                                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, false)} />
+                                        </label>
                                     </div>
                                     <input
                                         type="text"
-                                        placeholder="https://ejemplo.com/foto.jpg"
+                                        placeholder="URL de la imagen o adjunta un archivo"
                                         value={newProductData.mainImage}
                                         onChange={(e) => setNewProductData({ ...newProductData, mainImage: e.target.value })}
                                         className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground"
