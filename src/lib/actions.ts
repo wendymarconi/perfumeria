@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import bcrypt from "bcryptjs";
+
 
 export async function adminLogin(email: string, password: string) {
     try {
@@ -267,19 +267,11 @@ export async function createProduct(data: {
 
 // NUEVAS ACCIONES: Autenticación, Variantes y Carrusel
 
+// loginAdmin: alias de adminLogin para compatibilidad con código anterior
 export async function loginAdmin(email: string, password: string) {
-    try {
-        const admin = await prisma.adminUser.findUnique({ where: { email } });
-        if (!admin) return { success: false, error: "Credenciales inválidas" };
-
-        const isMatch = await bcrypt.compare(password, admin.password);
-        if (!isMatch) return { success: false, error: "Credenciales inválidas" };
-
-        return { success: true, user: { id: admin.id, email: admin.email } };
-    } catch (error) {
-        return { success: false, error: "Error en el servidor" };
-    }
+    return adminLogin(email, password);
 }
+
 
 export async function addVariant(perfumeId: string, data: { size: string, price: number, stock: number }) {
     try {
