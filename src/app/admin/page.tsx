@@ -1,15 +1,20 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import { Clock, CheckCircle2, Truck, XCircle, ChevronRight, Package, ShoppingCart, Edit2, Save, Trash2, Camera, Upload, Image as ImageIcon, Plus, Trash, PlusCircle, MinusCircle, LogIn, Eye, EyeOff } from 'lucide-react';
 import { getOrders, updateOrderStatus, getAdminProducts, updateProduct, updateVariant, createProduct, deleteProduct, createVariant, deleteVariant, adminLogin } from '@/lib/actions';
 import { formatPrice } from '@/lib/formatters';
 
 export default function AdminPage() {
-    const [activeTab, setActiveTab] = useState<'orders' | 'inventory' | 'create'>('orders');
+    const [activeTab, setActiveTab] = useState<'orders' | 'inventory' | 'create' | 'carousel'>('orders');
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [emailInput, setEmailInput] = useState('');
+    const [passwordInput, setPasswordInput] = useState('');
+    
     const [orders, setOrders] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
+    const [carouselImages, setCarouselImages] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [editingProduct, setEditingProduct] = useState<string | null>(null);
     const [editData, setEditData] = useState<any>({});
@@ -24,16 +29,23 @@ export default function AdminPage() {
     const [loginLoading, setLoginLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     
-    // Filtros de Pedidos
-    const [statusFilter, setStatusFilter] = useState('ALL');
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const editFileInputRef = useRef<HTMLInputElement>(null);
 
     // Filtros de Inventario
     const [searchName, setSearchName] = useState('');
     const [searchBrand, setSearchBrand] = useState('');
     const [searchCategory, setSearchCategory] = useState('');
     const [searchGender, setSearchGender] = useState('');
+    
+    // Filtros de Pedidos
+    const [statusFilter, setStatusFilter] = useState('ALL');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+
+    // Paginación
+    const [itemsPerPage, setItemsPerPage] = useState<number | 'all'>(10);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const filteredProducts = products.filter((p: any) => {
         const matchName = searchName === '' || p.name.toLowerCase().includes(searchName.toLowerCase());
@@ -42,6 +54,16 @@ export default function AdminPage() {
         const matchGender = searchGender === '' || p.gender === searchGender;
         return matchName && matchBrand && matchCategory && matchGender;
     });
+
+    const totalPages = itemsPerPage === 'all' ? 1 : Math.ceil(filteredProducts.length / itemsPerPage);
+    const paginatedProducts = itemsPerPage === 'all' 
+        ? filteredProducts 
+        : filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    // Reset page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchName, searchBrand, searchCategory, searchGender, itemsPerPage]);
     
     const statusTranslations: Record<string, string> = {
         'PENDING': 'Pendiente',
@@ -56,6 +78,7 @@ export default function AdminPage() {
         name: '',
         category: 'Nicho',
         description: '',
+        notes: '',
         mainImage: '',
         images: '[]',
         accords: '',
@@ -85,8 +108,17 @@ export default function AdminPage() {
             fetchOrders();
         } else if (activeTab === 'inventory') {
             fetchProducts();
+        } else if (activeTab === 'carousel') {
+            fetchCarousel();
         }
-    }, [activeTab]);
+    }, [activeTab, isAuthenticated]);
+
+    async function fetchCarousel() {
+        setIsLoading(true);
+        const data = await getCarouselImages();
+        setCarouselImages(data);
+        setIsLoading(false);
+    }
 
     async function fetchOrders() {
         setIsLoading(true);
@@ -117,6 +149,8 @@ export default function AdminPage() {
             notes: editData.notes,
             accords: editData.accords,
             mainImage: editData.mainImage,
+            category: editData.category,
+            gender: editData.gender,
             images: editData.images
         });
 
@@ -135,15 +169,17 @@ export default function AdminPage() {
         }
     }
 
-    async function handleUpdateVariant(variantId: string, field: 'size' | 'price' | 'stock', value: any) {
-        const result = await updateVariant(variantId, { [field]: field === 'size' ? value : Number(value) });
+    async function handleAddVariant(perfumeId: string) {
+        const result = await addVariant(perfumeId, newVariantData);
         if (result.success) {
+            setIsAddingVariant(null);
+            setNewVariantData({ size: '', price: 0, stock: 0 });
             fetchProducts();
         }
     }
 
-    async function handleAddVariant(productId: string) {
-        const result = await createVariant(productId, { size: 'Nueva Medida', price: 0, stock: 0 });
+    async function handleUpdateVariant(variantId: string, field: 'price' | 'stock' | 'size', value: any) {
+        const result = await updateVariant(variantId, { [field]: (field === 'price' || field === 'stock') ? Number(value) : value });
         if (result.success) {
             fetchProducts();
         }
@@ -168,17 +204,33 @@ export default function AdminPage() {
         if (result.success) {
             setActiveTab('inventory');
             setNewProductData({
-                brand: '', name: '', category: 'Nicho', description: '', mainImage: '', gender: 'Unisex',
+                brand: '', name: '', category: 'Nicho', description: '', notes: '', mainImage: '', gender: 'Unisex',
                 images: '[]', accords: '',
                 variants: [
-                    { size: '5ml', price: 0, stock: 10 },
-                    { size: '10ml', price: 0, stock: 10 },
-                    { size: '100ml', price: 0, stock: 5 }
+                    { size: '5ml', price: 0, stock: 10 }
                 ]
             });
         }
         setIsLoading(false);
     }
+
+    const handleCarouselUpload = (e: React.ChangeEvent<HTMLInputElement>, index: number, id: string | null) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            alert('La imagen es demasiado grande. Máximo 2MB.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+            const base64String = reader.result as string;
+            await updateCarouselImage(id, { imageUrl: base64String, order: index });
+            fetchCarousel();
+        };
+        reader.readAsDataURL(file);
+    };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false, index?: number) => {
         const file = e.target.files?.[0];
@@ -314,7 +366,7 @@ export default function AdminPage() {
                         <h1 className="text-4xl md:text-5xl font-serif text-foreground">Administración</h1>
                     </div>
 
-                    <div className="flex bg-card/50 p-1 border border-border/20 glass backdrop-blur-md">
+                    <div className="flex flex-wrap overflow-x-auto bg-card/50 p-1 border border-border/20 glass backdrop-blur-md">
                         <button
                             onClick={() => setActiveTab('orders')}
                             className={`px-6 py-2.5 text-[10px] uppercase tracking-widest transition-all ${activeTab === 'orders' ? 'bg-accent text-accent-foreground' : 'text-muted hover:text-foreground'}`}
@@ -334,13 +386,28 @@ export default function AdminPage() {
                             </div>
                         </button>
                         <button
+                            onClick={() => setActiveTab('carousel')}
+                            className={`px-6 py-2.5 text-[10px] uppercase tracking-widest transition-all ${activeTab === 'carousel' ? 'bg-accent text-accent-foreground' : 'text-muted hover:text-foreground'}`}
+                        >
+                            <div className="flex items-center gap-2">
+                                <Camera size={14} />
+                                <span>Carrusel</span>
+                            </div>
+                        </button>
+                        <button
                             onClick={() => setActiveTab('create')}
                             className={`px-6 py-2.5 text-[10px] uppercase tracking-widest transition-all ${activeTab === 'create' ? 'bg-accent text-accent-foreground' : 'text-muted hover:text-foreground'}`}
                         >
                             <div className="flex items-center gap-2">
-                                <Save size={14} />
-                                <span>Nuevo</span>
+                                <PlusCircle size={14} />
+                                <span>Crear</span>
                             </div>
+                        </button>
+                        <button
+                            onClick={() => setIsAuthenticated(false)}
+                            className="px-6 py-2.5 text-[10px] uppercase tracking-widest text-rose-500 hover:bg-rose-500/10 transition-all border-l border-border/20"
+                        >
+                            <span>Salir</span>
                         </button>
                     </div>
                 </header>
@@ -488,7 +555,16 @@ export default function AdminPage() {
 
                         {/* Search / Filter Bar */}
                         <div className="bg-card border border-border/20 p-5 glass">
-                            <span className="text-[9px] uppercase tracking-[0.3em] text-accent mb-4 block font-medium">Filtrar Inventario</span>
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-[9px] uppercase tracking-[0.3em] text-accent font-medium">Filtrar Inventario</span>
+                                <button
+                                    onClick={() => setActiveTab('create')}
+                                    className="px-4 py-1.5 bg-accent/10 border border-accent/20 text-accent text-[9px] uppercase tracking-widest hover:bg-accent hover:text-white transition-all flex items-center gap-2"
+                                >
+                                    <Plus size={12} />
+                                    <span>Nuevo Producto</span>
+                                </button>
+                            </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="space-y-1">
                                     <label className="text-[9px] uppercase tracking-widest text-muted">Nombre</label>
@@ -519,8 +595,8 @@ export default function AdminPage() {
                                     >
                                         <option value="">Todas</option>
                                         <option value="Nicho">Nicho</option>
+                                        <option value="Árabe">Árabe</option>
                                         <option value="Diseñador">Diseñador</option>
-                                        <option value="Arabe">Árabe</option>
                                     </select>
                                 </div>
                                 <div className="space-y-1">
@@ -534,6 +610,19 @@ export default function AdminPage() {
                                         <option value="Male">Hombre</option>
                                         <option value="Female">Mujer</option>
                                         <option value="Unisex">Unisex</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] uppercase tracking-widest text-muted">Mostrar</label>
+                                    <select
+                                        value={itemsPerPage}
+                                        onChange={(e) => setItemsPerPage(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                                        className="w-full bg-background border border-border/30 px-3 py-2 text-xs focus:outline-none focus:border-accent text-foreground"
+                                    >
+                                        <option value={5}>5 por página</option>
+                                        <option value={10}>10 por página</option>
+                                        <option value={20}>20 por página</option>
+                                        <option value="all">Ver Todos</option>
                                     </select>
                                 </div>
                             </div>
@@ -550,9 +639,8 @@ export default function AdminPage() {
                             )}
                         </div>
 
-                        {/* Product List */}
                         <div className="space-y-4">
-                        {filteredProducts.map((product: any) => (
+                        {paginatedProducts.map((product: any) => (
                             <div key={product.id} className="bg-card border border-border/20 p-8 hover:border-accent/40 transition-all duration-500">
                                 {editingProduct === product.id ? (
                                     /* Edit Mode */
@@ -562,7 +650,7 @@ export default function AdminPage() {
                                                 <label className="text-[10px] uppercase tracking-widest text-accent">Marca</label>
                                                 <input
                                                     type="text"
-                                                    value={editData.brand}
+                                                    value={editData.brand || ''}
                                                     onChange={(e) => setEditData({ ...editData, brand: e.target.value })}
                                                     className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground"
                                                 />
@@ -571,18 +659,45 @@ export default function AdminPage() {
                                                 <label className="text-[10px] uppercase tracking-widest text-accent">Nombre</label>
                                                 <input
                                                     type="text"
-                                                    value={editData.name}
+                                                    value={editData.name || ''}
                                                     onChange={(e) => setEditData({ ...editData, name: e.target.value })}
                                                     className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground"
                                                 />
                                             </div>
                                         </div>
 
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] uppercase tracking-widest text-accent">Categoría</label>
+                                                <select
+                                                    value={editData.category || ''}
+                                                    onChange={(e) => setEditData({ ...editData, category: e.target.value })}
+                                                    className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground"
+                                                >
+                                                    <option value="Nicho">Nicho</option>
+                                                    <option value="Árabe">Árabe</option>
+                                                    <option value="Diseñador">Diseñador</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] uppercase tracking-widest text-accent">Género</label>
+                                                <select
+                                                    value={editData.gender || ''}
+                                                    onChange={(e) => setEditData({ ...editData, gender: e.target.value })}
+                                                    className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground"
+                                                >
+                                                    <option value="Unisex">Unisex</option>
+                                                    <option value="Male">Hombre</option>
+                                                    <option value="Female">Mujer</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
                                         <div className="space-y-2">
                                             <label className="text-[10px] uppercase tracking-widest text-accent">Descripción</label>
                                             <textarea
-                                                rows={4}
-                                                value={editData.description}
+                                                rows={3}
+                                                value={editData.description || ''}
                                                 onChange={(e) => setEditData({ ...editData, description: e.target.value })}
                                                 className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
                                             />
@@ -591,100 +706,40 @@ export default function AdminPage() {
                                         <div className="space-y-2">
                                             <label className="text-[10px] uppercase tracking-widest text-accent">Notas Olfativas</label>
                                             <textarea
-                                                rows={3}
-                                                placeholder="Salida: ...; Corazón: ...; Fondo: ..."
-                                                value={editData.notes}
+                                                rows={2}
+                                                value={editData.notes || ''}
                                                 onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
                                                 className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
+                                                placeholder="Ej: Salida: Cítricos, Corazón: Rosa, Fondo: Ámbar"
                                             />
-                                            <p className="text-[8px] text-muted italic">Usa punto y coma (;) para separar las fases y dos puntos (:) para el título.</p>
                                         </div>
 
                                         <div className="space-y-2">
                                             <label className="text-[10px] uppercase tracking-widest text-accent">Acordes Principales</label>
                                             <textarea
                                                 rows={2}
-                                                placeholder="cítrico, dulce:80, floral, amaderado"
-                                                value={editData.accords}
+                                                placeholder="cítrico, dulce, floral, amaderado"
+                                                value={editData.accords || ''}
                                                 onChange={(e) => setEditData({ ...editData, accords: e.target.value })}
                                                 className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
                                             />
-                                            <p className="text-[8px] text-muted italic">Separa por comas. Opcional el peso (0-100) ej: cítrico:90.</p>
                                         </div>
 
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-end mb-1">
-                                                <label className="text-[10px] uppercase tracking-widest text-accent">Imágenes del Perfume (Máx 5)</label>
-                                                <button 
-                                                    onClick={() => editFileInputRef.current?.click()}
-                                                    disabled={JSON.parse(editData.images || '[]').length >= 5}
-                                                    className="text-[10px] uppercase tracking-widest text-accent hover:text-white flex items-center gap-1 transition-colors disabled:opacity-50"
-                                                >
-                                                    <Upload size={14} />
-                                                    <span>Añadir Imagen</span>
-                                                </button>
+                                                <label className="text-[10px] uppercase tracking-widest text-accent">Imagen Principal</label>
+                                                <label className="text-[9px] text-accent uppercase tracking-widest cursor-pointer hover:underline flex items-center gap-1">
+                                                    <Upload size={10} /> Adjuntar
+                                                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, true)} />
+                                                </label>
                                             </div>
-                                            <input 
-                                                type="file" 
-                                                ref={editFileInputRef} 
-                                                className="hidden" 
-                                                accept="image/*"
-                                                onChange={(e) => handleImageUpload(e, true)}
+                                            <input
+                                                type="text"
+                                                value={editData.mainImage || ''}
+                                                onChange={(e) => setEditData({ ...editData, mainImage: e.target.value })}
+                                                className="w-full bg-background border border-border/30 p-3 text-sm focus:outline-none focus:border-accent text-foreground"
+                                                placeholder="URL de la imagen"
                                             />
-
-                                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                                                {JSON.parse(editData.images || '[]').map((img: string, idx: number) => (
-                                                    <div key={idx} className="relative aspect-square border border-border/30 overflow-hidden group bg-white p-2 text-center flex items-center justify-center">
-                                                        <img 
-                                                            src={img} 
-                                                            alt={`Preview ${idx + 1}`} 
-                                                            className="max-w-full max-h-full object-contain"
-                                                        />
-                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                            <button 
-                                                                onClick={() => handleRemoveImage(idx, true)}
-                                                                className="bg-rose-500 text-white p-1 rounded-full"
-                                                            >
-                                                                <Trash size={12} />
-                                                            </button>
-                                                        </div>
-                                                        {idx === 0 && (
-                                                            <div className="absolute top-0 left-0 bg-accent text-accent-foreground text-[8px] px-1.5 py-0.5 uppercase tracking-tighter font-bold">Principal</div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                                {JSON.parse(editData.images || '[]').length < 5 && (
-                                                    <button 
-                                                        onClick={() => editFileInputRef.current?.click()}
-                                                        className="aspect-square border border-dashed border-border/30 flex flex-col items-center justify-center gap-2 text-muted hover:text-accent hover:border-accent transition-all bg-background/20"
-                                                    >
-                                                        <PlusCircle size={20} />
-                                                        <span className="text-[8px] uppercase tracking-widest font-medium">Subir</span>
-                                                    </button>
-                                                )}
-                                            </div>
-                                            <div className="space-y-2">
-                                                <input
-                                                    type="text"
-                                                    placeholder="O pega una URL de imagen aquí para añadir..."
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            const value = (e.target as HTMLInputElement).value;
-                                                            if (value) {
-                                                                const currentImages = JSON.parse(editData.images || '[]');
-                                                                if (currentImages.length < 5) {
-                                                                    currentImages.push(value);
-                                                                    setEditData({ ...editData, images: JSON.stringify(currentImages), mainImage: currentImages[0] });
-                                                                    (e.target as HTMLInputElement).value = '';
-                                                                } else {
-                                                                    alert('Máximo 5 imágenes permitidas.');
-                                                                }
-                                                            }
-                                                        }
-                                                    }}
-                                                    className="w-full bg-background border border-border/30 p-3 text-xs focus:outline-none focus:border-accent text-foreground"
-                                                />
-                                            </div>
                                         </div>
 
                                         <div className="flex justify-end gap-4 pt-4 border-t border-border/10">
@@ -729,7 +784,7 @@ export default function AdminPage() {
                                                             setEditingProduct(product.id);
                                                             setEditData({
                                                                 ...product,
-                                                                images: product.images || JSON.stringify([product.mainImage])
+                                                                images: product.images || '[]'
                                                             });
                                                         }}
                                                         className="p-2 text-muted hover:text-accent transition-colors"
@@ -740,16 +795,12 @@ export default function AdminPage() {
                                                         onClick={() => handleDeleteProduct(product.id)}
                                                         className="p-2 text-muted hover:text-rose-500 transition-colors"
                                                     >
-                                                        <Trash2 size={16} />
+                                                        <Trash size={16} />
                                                     </button>
                                                 </div>
                                             </div>
 
-                                            <p className="text-sm text-muted font-sans line-clamp-2 italic mb-6">
-                                                "{product.description}"
-                                            </p>
-
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 border-t border-border/5 pt-6">
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-border/5 pt-6">
                                                 {product.variants.map((variant: any) => (
                                                     <div key={variant.id} className="bg-background/40 p-3 border border-border/10">
                                                         <div className="flex justify-between items-center mb-2">
@@ -791,19 +842,140 @@ export default function AdminPage() {
                                                         </div>
                                                     </div>
                                                 ))}
-                                                <button 
-                                                    onClick={() => handleAddVariant(product.id)}
-                                                    className="border border-dashed border-border/30 p-3 flex flex-col items-center justify-center gap-1 text-muted hover:text-accent hover:border-accent transition-all group"
-                                                >
-                                                    <Plus size={14} />
-                                                    <span className="text-[9px] uppercase tracking-widest font-medium">Añadir Medida</span>
-                                                </button>
+
+                                                {/* Add Variant Toggle */}
+                                                {isAddingVariant === product.id ? (
+                                                    <div className="bg-accent/5 p-3 border border-accent/20 space-y-3">
+                                                        <input 
+                                                            placeholder="Medida (ej: 50ml)"
+                                                            className="w-full bg-background border border-border/20 text-[10px] p-2 focus:outline-none"
+                                                            onChange={(e) => setNewVariantData({...newVariantData, size: e.target.value})}
+                                                        />
+                                                        <div className="flex gap-2">
+                                                            <input 
+                                                                type="number" 
+                                                                placeholder="Precio"
+                                                                className="w-1/2 bg-background border border-border/20 text-[10px] p-2 focus:outline-none"
+                                                                onChange={(e) => setNewVariantData({...newVariantData, price: Number(e.target.value)})}
+                                                            />
+                                                            <input 
+                                                                type="number" 
+                                                                placeholder="Stock"
+                                                                className="w-1/2 bg-background border border-border/20 text-[10px] p-2 focus:outline-none"
+                                                                onChange={(e) => setNewVariantData({...newVariantData, stock: Number(e.target.value)})}
+                                                            />
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <button 
+                                                                onClick={() => handleAddVariant(product.id)}
+                                                                className="w-full bg-accent text-[9px] text-white py-1 uppercase tracking-widest"
+                                                            >
+                                                                Añadir
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => setIsAddingVariant(null)}
+                                                                className="w-full bg-card border border-border/20 text-[9px] py-1 uppercase tracking-widest"
+                                                            >
+                                                                X
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <button 
+                                                        onClick={() => setIsAddingVariant(product.id)}
+                                                        className="flex flex-col items-center justify-center p-3 border border-dashed border-border/30 hover:border-accent/40 hover:bg-accent/5 transition-all text-muted hover:text-accent group"
+                                                    >
+                                                        <span className="text-[10px] uppercase tracking-widest">+ Añadir Medida</span>
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
                                 )}
                             </div>
                         ))}
+                        </div>
+
+                        {/* Pagination Controls */}
+                        {itemsPerPage !== 'all' && totalPages > 1 && (
+                            <div className="flex justify-center items-center gap-4 pt-8">
+                                <button
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(prev => prev - 1)}
+                                    className="p-2 text-muted hover:text-accent disabled:opacity-20 transition-colors"
+                                >
+                                    <ChevronLeft size={20} />
+                                </button>
+                                <span className="text-[10px] uppercase tracking-widest font-medium">
+                                    Página <span className="text-accent">{currentPage}</span> de {totalPages}
+                                </span>
+                                <button
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => setCurrentPage(prev => prev + 1)}
+                                    className="p-2 text-muted hover:text-accent disabled:opacity-20 transition-colors"
+                                >
+                                    <ChevronRight size={20} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                ) : activeTab === 'carousel' ? (
+                    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-700">
+                        <div className="bg-card border border-border/20 p-8 glass">
+                            <h2 className="text-xl font-serif mb-6 text-foreground">Gestión de Carrusel (Máx 3 imágenes)</h2>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {[0, 1, 2].map((index) => {
+                                    const img = carouselImages.find(c => c.order === index);
+                                    return (
+                                        <div key={index} className="space-y-4 p-4 border border-border/10 bg-background/20 relative">
+                                            <div className="aspect-video bg-black/10 overflow-hidden relative group">
+                                                {img ? (
+                                                    <img src={img.imageUrl} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-[10px] text-muted uppercase tracking-widest">Vacío</div>
+                                                )}
+                                                {img && (
+                                                    <button 
+                                                        onClick={() => deleteCarouselImage(img.id).then(fetchCarousel)}
+                                                        className="absolute top-2 right-2 p-1 bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    >
+                                                        <XCircle size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="flex justify-between items-center px-1">
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="URL Imagen"
+                                                    defaultValue={img?.imageUrl || ''}
+                                                    className="flex-grow bg-background border border-border/20 p-2 text-[10px] focus:outline-none focus:border-accent"
+                                                    onBlur={(e) => {
+                                                        if (e.target.value) {
+                                                            updateCarouselImage(img?.id || null, { 
+                                                                imageUrl: e.target.value, 
+                                                                order: index 
+                                                            }).then(fetchCarousel);
+                                                        }
+                                                    }}
+                                                />
+                                                <label className="ml-2 p-2 bg-accent/10 text-accent hover:bg-accent hover:text-white transition-all cursor-pointer">
+                                                    <Upload size={12} />
+                                                    <input 
+                                                        type="file" 
+                                                        className="hidden" 
+                                                        accept="image/*" 
+                                                        onChange={(e) => handleCarouselUpload(e, index, img?.id || null)} 
+                                                    />
+                                                </label>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <p className="mt-6 text-[9px] text-muted uppercase tracking-widest italic text-center">
+                                * Los cambios se aplican automáticamente al salir del campo de texto (Blur).
+                            </p>
                         </div>
                     </div>
                 ) : (
@@ -866,7 +1038,7 @@ export default function AdminPage() {
                                 <div className="space-y-2">
                                     <label className="text-[10px] uppercase tracking-widest text-accent">Descripción</label>
                                     <textarea
-                                        rows={4}
+                                        rows={3}
                                         placeholder="Describe la fragancia..."
                                         value={newProductData.description}
                                         onChange={(e) => setNewProductData({ ...newProductData, description: e.target.value })}
@@ -877,104 +1049,40 @@ export default function AdminPage() {
                                 <div className="space-y-2">
                                     <label className="text-[10px] uppercase tracking-widest text-accent">Notas Olfativas</label>
                                     <textarea
-                                        rows={3}
-                                        placeholder="Salida: ...; Corazón: ...; Fondo: ..."
+                                        rows={2}
+                                        placeholder="Salida: ..., Corazón: ..., Fondo: ..."
                                         value={newProductData.notes}
                                         onChange={(e) => setNewProductData({ ...newProductData, notes: e.target.value })}
                                         className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
                                     />
-                                    <p className="text-[9px] text-muted italic">Ejemplo: Salida: Cítricos; Corazón: Jazmín; Fondo: Vainilla</p>
                                 </div>
 
                                 <div className="space-y-2">
                                     <label className="text-[10px] uppercase tracking-widest text-accent">Acordes Principales</label>
                                     <textarea
                                         rows={2}
-                                        placeholder="cítrico, dulce:80, floral, amaderado"
+                                        placeholder="cítrico, dulce, floral, amaderado"
                                         value={newProductData.accords}
                                         onChange={(e) => setNewProductData({ ...newProductData, accords: e.target.value })}
                                         className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground resize-none"
                                     />
-                                    <p className="text-[9px] text-muted italic">Separa los acordes por comas (ej: cítrico, dulce, floral).</p>
                                 </div>
 
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-end mb-1">
-                                        <label className="text-[10px] uppercase tracking-widest text-accent">Imágenes del Perfume (Máx 5)</label>
-                                        <div className="flex gap-4">
-                                            <button 
-                                                onClick={() => fileInputRef.current?.click()}
-                                                disabled={JSON.parse(newProductData.images || '[]').length >= 5}
-                                                className="text-[10px] uppercase tracking-widest text-accent hover:text-white flex items-center gap-1 transition-colors disabled:opacity-50"
-                                            >
-                                                <Upload size={14} />
-                                                <span>Añadir Imagen</span>
-                                            </button>
-                                        </div>
-                                        <input 
-                                            type="file" 
-                                            ref={fileInputRef} 
-                                            className="hidden" 
-                                            accept="image/*"
-                                            onChange={(e) => handleImageUpload(e, false)}
-                                        />
+                                        <label className="text-[10px] uppercase tracking-widest text-accent">Imagen Principal</label>
+                                        <label className="text-[9px] text-accent uppercase tracking-widest cursor-pointer hover:underline flex items-center gap-1">
+                                            <Upload size={10} /> Adjuntar
+                                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, false)} />
+                                        </label>
                                     </div>
-
-                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                                        {JSON.parse(newProductData.images || '[]').map((img: string, idx: number) => (
-                                            <div key={idx} className="relative aspect-square border border-border/30 overflow-hidden group bg-white p-2 text-center flex items-center justify-center">
-                                                <img 
-                                                    src={img} 
-                                                    alt={`Preview ${idx + 1}`} 
-                                                    className="max-w-full max-h-full object-contain"
-                                                />
-                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                    <button 
-                                                        onClick={() => handleRemoveImage(idx, false)}
-                                                        className="bg-rose-500 text-white p-1 rounded-full"
-                                                    >
-                                                        <Trash size={12} />
-                                                    </button>
-                                                </div>
-                                                {idx === 0 && (
-                                                    <div className="absolute top-0 left-0 bg-accent text-accent-foreground text-[8px] px-1.5 py-0.5 uppercase tracking-tighter font-bold">Principal</div>
-                                                )}
-                                            </div>
-                                        ))}
-                                        {JSON.parse(newProductData.images || '[]').length < 5 && (
-                                            <button 
-                                                onClick={() => fileInputRef.current?.click()}
-                                                className="aspect-square border border-dashed border-border/30 flex flex-col items-center justify-center gap-2 text-muted hover:text-accent hover:border-accent transition-all bg-background/20"
-                                            >
-                                                <PlusCircle size={20} />
-                                                <span className="text-[8px] uppercase tracking-widest font-medium">Subir</span>
-                                            </button>
-                                        )}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <input
-                                            type="text"
-                                            placeholder="O pega una URL de imagen aquí para añadir..."
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    const value = (e.target as HTMLInputElement).value;
-                                                    if (value) {
-                                                        const currentImages = JSON.parse(newProductData.images || '[]');
-                                                        if (currentImages.length < 5) {
-                                                            currentImages.push(value);
-                                                            const mainImg = currentImages[0];
-                                                            setNewProductData({ ...newProductData, images: JSON.stringify(currentImages), mainImage: mainImg });
-                                                            (e.target as HTMLInputElement).value = '';
-                                                        } else {
-                                                            alert('Máximo 5 imágenes permitidas.');
-                                                        }
-                                                    }
-                                                }
-                                            }}
-                                            className="w-full bg-background border border-border/30 p-3 text-xs focus:outline-none focus:border-accent text-foreground"
-                                        />
-                                        <p className="text-[9px] text-muted italic">La primera imagen será la principal.</p>
-                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="URL de la imagen o adjunta un archivo"
+                                        value={newProductData.mainImage}
+                                        onChange={(e) => setNewProductData({ ...newProductData, mainImage: e.target.value })}
+                                        className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground"
+                                    />
                                 </div>
 
                                 <div className="space-y-4 pt-4 border-t border-border/10">

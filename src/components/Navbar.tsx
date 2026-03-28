@@ -1,12 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingBag, User, Search } from "lucide-react";
+import { ShoppingBag, User, Search, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import CartDrawer from "./CartDrawer";
 
 export default function Navbar() {
     const { getTotalItems, setIsCartOpen } = useCart();
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const router = useRouter();
 
     return (
         <>
@@ -35,9 +40,42 @@ export default function Navbar() {
 
                     {/* Icons */}
                     <div className="flex items-center gap-6">
-                        <button className="hover:text-accent transition-colors" title="Search">
-                            <Search size={22} strokeWidth={1.5} />
-                        </button>
+                        {isSearching ? (
+                            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
+                                <input 
+                                    autoFocus
+                                    type="text" 
+                                    value={searchQuery}
+                                    onChange={(e) => {
+                                        setSearchQuery(e.target.value);
+                                        if (e.target.value.trim() === '') {
+                                            router.push('/catalogo');
+                                        }
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            if (searchQuery.trim()) {
+                                                router.push(`/catalogo?q=${encodeURIComponent(searchQuery.trim())}`);
+                                            }
+                                            setIsSearching(false);
+                                        }
+                                    }}
+                                    className="bg-transparent border-b border-accent focus:outline-none text-sm w-32 md:w-48 text-foreground"
+                                    placeholder="Buscar perfume..."
+                                />
+                                <button className="hover:text-accent transition-colors" onClick={() => {
+                                    setSearchQuery('');
+                                    router.push('/catalogo');
+                                    setIsSearching(false);
+                                }}>
+                                    <X size={18} strokeWidth={1.5} />
+                                </button>
+                            </div>
+                        ) : (
+                            <button className="hover:text-accent transition-colors" title="Search" onClick={() => setIsSearching(true)}>
+                                <Search size={22} strokeWidth={1.5} />
+                            </button>
+                        )}
                         <Link href="/admin" className="hover:text-accent transition-colors" title="Admin">
                             <User size={22} strokeWidth={1.5} />
                         </Link>

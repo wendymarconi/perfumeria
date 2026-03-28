@@ -61,3 +61,19 @@ model OrderItem {
   quantity  Int
   price     Float
 }
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+model HomeCarousel {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  title     String?
+  subtitle  String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}

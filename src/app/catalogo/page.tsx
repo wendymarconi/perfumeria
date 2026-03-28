@@ -5,15 +5,23 @@ import { prisma } from "@/lib/prisma";
 export default async function CatalogPage({
     searchParams,
 }: {
-    searchParams: Promise<{ category?: string; gender?: string }>;
+    searchParams: Promise<{ category?: string; gender?: string; q?: string }>;
 }) {
-    const { category, gender } = await searchParams;
+    const { category, gender, q } = await searchParams;
 
     const perfumes = await prisma.perfume.findMany({
         where: {
             AND: [
                 category ? { category } : {},
                 gender ? { gender } : {},
+                q ? {
+                    OR: [
+                        { name: { contains: q, mode: "insensitive" } },
+                        { brand: { contains: q, mode: "insensitive" } },
+                        { description: { contains: q, mode: "insensitive" } },
+                        { notes: { contains: q, mode: "insensitive" } }
+                    ]
+                } : {}
             ],
         },
         include: {
@@ -37,7 +45,9 @@ export default async function CatalogPage({
                     <span className="text-xs uppercase tracking-[0.3em] text-accent font-sans mb-4 block">
                         Explora
                     </span>
-                    <h1 className="text-4xl md:text-6xl font-serif">Nuestro Catálogo</h1>
+                    <h1 className="text-4xl md:text-6xl font-serif">
+                        {q ? `Resultados para "${q}"` : "Nuestro Catálogo"}
+                    </h1>
                 </header>
 
                 <div className="flex flex-col lg:flex-row gap-12">

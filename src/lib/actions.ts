@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import bcrypt from "bcryptjs";
 
 export async function adminLogin(email: string, password: string) {
     try {
@@ -124,7 +125,7 @@ export async function updateProduct(id: string, data: {
     category?: string;
     description?: string;
     mainImage?: string;
-    images?: string; // JSON string
+    images?: string;
     notes?: string;
     accords?: string;
 }) {
@@ -225,6 +226,7 @@ export async function createProduct(data: {
     description: string;
     mainImage: string;
     gender: string;
+    notes?: string;
     images?: string;
     accords?: string;
     variants: {
@@ -242,7 +244,7 @@ export async function createProduct(data: {
                 description: data.description,
                 mainImage: data.mainImage,
                 gender: data.gender,
-                notes: "Salida: ; Corazón: ; Fondo: ",
+                notes: data.notes || "",
                 accords: data.accords || "[]",
                 images: data.images || "[]",
                 variants: {
@@ -259,6 +261,75 @@ export async function createProduct(data: {
         return { success: true };
     } catch (error) {
         console.error("Failed to create product:", error);
+        return { success: false };
+    }
+}
+
+// NUEVAS ACCIONES: Autenticación, Variantes y Carrusel
+
+export async function loginAdmin(email: string, password: string) {
+    try {
+        const admin = await prisma.adminUser.findUnique({ where: { email } });
+        if (!admin) return { success: false, error: "Credenciales inválidas" };
+
+        const isMatch = await bcrypt.compare(password, admin.password);
+        if (!isMatch) return { success: false, error: "Credenciales inválidas" };
+
+        return { success: true, user: { id: admin.id, email: admin.email } };
+    } catch (error) {
+        return { success: false, error: "Error en el servidor" };
+    }
+}
+
+export async function addVariant(perfumeId: string, data: { size: string, price: number, stock: number }) {
+    try {
+        await prisma.variant.create({
+            data: {
+                ...data,
+                perfumeId
+            }
+        });
+        revalidatePath("/admin");
+        revalidatePath("/catalogo");
+        return { success: true };
+    } catch (error) {
+        return { success: false };
+    }
+}
+
+export async function getCarouselImages() {
+    return await prisma.homeCarousel.findMany({
+        orderBy: { order: 'asc' }
+    });
+}
+
+export async function updateCarouselImage(id: string | null, data: { imageUrl: string, title?: string, subtitle?: string, order: number }) {
+    try {
+        if (id) {
+            await prisma.homeCarousel.update({
+                where: { id },
+                data
+            });
+        } else {
+            await prisma.homeCarousel.create({
+                data
+            });
+        }
+        revalidatePath("/");
+        revalidatePath("/admin");
+        return { success: true };
+    } catch (error) {
+        return { success: false };
+    }
+}
+
+export async function deleteCarouselImage(id: string) {
+    try {
+        await prisma.homeCarousel.delete({ where: { id } });
+        revalidatePath("/");
+        revalidatePath("/admin");
+        return { success: true };
+    } catch (error) {
         return { success: false };
     }
 }
