@@ -46,17 +46,28 @@ export default function Navbar() {
                                     autoFocus
                                     type="text" 
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onChange={(e) => {
+                                        setSearchQuery(e.target.value);
+                                        if (e.target.value.trim() === '') {
+                                            router.push('/catalogo');
+                                        }
+                                    }}
                                     onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && searchQuery.trim()) {
-                                            router.push(`/catalogo?q=${encodeURIComponent(searchQuery.trim())}`);
+                                        if (e.key === 'Enter') {
+                                            if (searchQuery.trim()) {
+                                                router.push(`/catalogo?q=${encodeURIComponent(searchQuery.trim())}`);
+                                            }
                                             setIsSearching(false);
                                         }
                                     }}
                                     className="bg-transparent border-b border-accent focus:outline-none text-sm w-32 md:w-48 text-foreground"
                                     placeholder="Buscar perfume..."
                                 />
-                                <button className="hover:text-accent transition-colors" onClick={() => setIsSearching(false)}>
+                                <button className="hover:text-accent transition-colors" onClick={() => {
+                                    setSearchQuery('');
+                                    router.push('/catalogo');
+                                    setIsSearching(false);
+                                }}>
                                     <X size={18} strokeWidth={1.5} />
                                 </button>
                             </div>
