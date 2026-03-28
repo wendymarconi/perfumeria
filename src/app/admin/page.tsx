@@ -329,7 +329,7 @@ export default function AdminPage() {
                         <h1 className="text-4xl md:text-5xl font-serif text-foreground">Administración</h1>
                     </div>
 
-                    <div className="flex bg-card/50 p-1 border border-border/20 glass backdrop-blur-md">
+                    <div className="flex flex-wrap overflow-x-auto bg-card/50 p-1 border border-border/20 glass backdrop-blur-md">
                         <button
                             onClick={() => setActiveTab('orders')}
                             className={`px-6 py-2.5 text-[10px] uppercase tracking-widest transition-all ${activeTab === 'orders' ? 'bg-accent text-accent-foreground' : 'text-muted hover:text-foreground'}`}
@@ -355,6 +355,15 @@ export default function AdminPage() {
                             <div className="flex items-center gap-2">
                                 <Camera size={14} />
                                 <span>Carrusel</span>
+                            </div>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('create')}
+                            className={`px-6 py-2.5 text-[10px] uppercase tracking-widest transition-all ${activeTab === 'create' ? 'bg-accent text-accent-foreground' : 'text-muted hover:text-foreground'}`}
+                        >
+                            <div className="flex items-center gap-2">
+                                <PlusCircle size={14} />
+                                <span>Crear</span>
                             </div>
                         </button>
                         <button
@@ -509,7 +518,16 @@ export default function AdminPage() {
 
                         {/* Search / Filter Bar */}
                         <div className="bg-card border border-border/20 p-5 glass">
-                            <span className="text-[9px] uppercase tracking-[0.3em] text-accent mb-4 block font-medium">Filtrar Inventario</span>
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-[9px] uppercase tracking-[0.3em] text-accent font-medium">Filtrar Inventario</span>
+                                <button
+                                    onClick={() => setActiveTab('create')}
+                                    className="px-4 py-1.5 bg-accent/10 border border-accent/20 text-accent text-[9px] uppercase tracking-widest hover:bg-accent hover:text-white transition-all flex items-center gap-2"
+                                >
+                                    <Plus size={12} />
+                                    <span>Nuevo Producto</span>
+                                </button>
+                            </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="space-y-1">
                                     <label className="text-[9px] uppercase tracking-widest text-muted">Nombre</label>
