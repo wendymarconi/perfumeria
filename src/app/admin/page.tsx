@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
-import { Clock, CheckCircle2, Truck, XCircle, ChevronRight, Package, ShoppingCart, Edit2, Save, Trash2, Camera, Upload, Image as ImageIcon, Plus, Trash, PlusCircle, MinusCircle } from 'lucide-react';
-import { getOrders, updateOrderStatus, getAdminProducts, updateProduct, updateVariant, createProduct, deleteProduct, createVariant, deleteVariant } from '@/lib/actions';
+import { Clock, CheckCircle2, Truck, XCircle, ChevronRight, Package, ShoppingCart, Edit2, Save, Trash2, Camera, Upload, Image as ImageIcon, Plus, Trash, PlusCircle, MinusCircle, LogIn, Eye, EyeOff } from 'lucide-react';
+import { getOrders, updateOrderStatus, getAdminProducts, updateProduct, updateVariant, createProduct, deleteProduct, createVariant, deleteVariant, adminLogin } from '@/lib/actions';
 import { formatPrice } from '@/lib/formatters';
 
 export default function AdminPage() {
@@ -15,6 +15,14 @@ export default function AdminPage() {
     const [editData, setEditData] = useState<any>({});
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const editFileInputRef = React.useRef<HTMLInputElement>(null);
+
+    // Auth
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [loginEmail, setLoginEmail] = useState('admin@perfumeria.com');
+    const [loginPassword, setLoginPassword] = useState('');
+    const [loginError, setLoginError] = useState('');
+    const [loginLoading, setLoginLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     
     // Filtros de Pedidos
     const [statusFilter, setStatusFilter] = useState('ALL');
@@ -57,7 +65,22 @@ export default function AdminPage() {
         ]
     });
 
+    async function handleLogin(e: React.FormEvent) {
+        e.preventDefault();
+        setLoginLoading(true);
+        setLoginError('');
+        const result = await adminLogin(loginEmail, loginPassword);
+        if (result.success) {
+            setIsAuthenticated(true);
+            fetchOrders();
+        } else {
+            setLoginError(result.error || 'Error al iniciar sesión.');
+        }
+        setLoginLoading(false);
+    }
+
     useEffect(() => {
+
         if (activeTab === 'orders') {
             fetchOrders();
         } else if (activeTab === 'inventory') {
@@ -216,6 +239,69 @@ export default function AdminPage() {
             default: return <Clock size={16} className="text-gray-500" />;
         }
     };
+
+    if (!isAuthenticated) {
+        return (
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
+                <div className="w-full max-w-md">
+                    <div className="text-center mb-10">
+                        <span className="text-[10px] uppercase tracking-[0.4em] text-accent mb-4 block">Panel de Control</span>
+                        <h1 className="text-3xl font-serif text-foreground">Acceso Admin</h1>
+                    </div>
+
+                    <form onSubmit={handleLogin} className="bg-card border border-border/20 p-10 glass space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-[10px] uppercase tracking-widest text-accent block">Email</label>
+                            <input
+                                type="email"
+                                value={loginEmail}
+                                onChange={(e) => setLoginEmail(e.target.value)}
+                                required
+                                className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] uppercase tracking-widest text-accent block">Contraseña</label>
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={loginPassword}
+                                    onChange={(e) => setLoginPassword(e.target.value)}
+                                    required
+                                    className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground pr-12"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-accent transition-colors"
+                                >
+                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            </div>
+                        </div>
+
+                        {loginError && (
+                            <p className="text-xs text-rose-400 text-center">{loginError}</p>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={loginLoading}
+                            className="w-full bg-accent text-accent-foreground py-4 text-[10px] uppercase tracking-[0.3em] font-medium hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                        >
+                            {loginLoading ? (
+                                <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
+                            ) : (
+                                <LogIn size={14} />
+                            )}
+                            <span>{loginLoading ? 'Verificando...' : 'Ingresar'}</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-background">

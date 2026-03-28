@@ -3,6 +3,27 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
+export async function adminLogin(email: string, password: string) {
+    try {
+        const adminEmail = process.env.ADMIN_EMAIL || 'admin@perfumeria.com';
+        const adminPassword = process.env.ADMIN_PASSWORD;
+
+        if (!adminPassword) {
+            console.error('ADMIN_PASSWORD no está configurada en las variables de entorno.');
+            return { success: false, error: 'Error de configuración del servidor.' };
+        }
+
+        if (email === adminEmail && password === adminPassword) {
+            return { success: true };
+        }
+
+        return { success: false, error: 'Email o contraseña incorrectos.' };
+    } catch (error) {
+        console.error('adminLogin error:', error);
+        return { success: false, error: 'Error en el servidor.' };
+    }
+}
+
 export async function createOrder(data: {
     customerName: string;
     customerEmail: string;
