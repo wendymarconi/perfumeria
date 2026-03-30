@@ -55,6 +55,24 @@ export default function CheckoutPage() {
         });
 
         if (result.success) {
+            // Configura aquí tu número de WhatsApp
+            const phoneNumber = "573216743585"; 
+            const message = `¡Hola! Acabo de registrar un nuevo pedido en la tienda.
+
+*Detalles del Cliente:*
+Nombre: ${formData.name}
+Email: ${formData.email}
+
+*Resumen del Pedido:*
+${cart.map(item => `- ${item.quantity}x ${item.name} (${item.size}) - ${formatPrice(item.price * item.quantity)}`).join('\n')}
+
+*Total:* ${formatPrice(getTotalPrice())}
+
+Por favor confírmame el pedido para coordinar el pago. ¡Gracias!`;
+
+            const waLink = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+            window.open(waLink, '_blank');
+
             setIsSuccess(true);
             clearCart();
         } else {
