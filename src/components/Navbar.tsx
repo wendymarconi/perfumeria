@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingBag, User, Search, X } from "lucide-react";
+import { ShoppingBag, User, Search, X, Heart } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -76,6 +76,9 @@ export default function Navbar() {
                                 <Search size={22} strokeWidth={1.5} />
                             </button>
                         )}
+                        <Link href="/wishlist" className="hover:text-accent transition-colors" title="Favoritos">
+                            <Heart size={22} strokeWidth={1.5} />
+                        </Link>
                         <Link href="/admin" className="hover:text-accent transition-colors" title="Admin">
                             <User size={22} strokeWidth={1.5} />
                         </Link>

@@ -2,6 +2,9 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 
 export async function adminLogin(email: string, password: string) {
@@ -56,6 +59,61 @@ export async function createOrder(data: {
                 }
             },
         });
+
+        // Enviar notificación por Correo Electrónico usando Resend
+        try {
+            const apiKey = process.env.RESEND_API_KEY;
+            const adminEmail = process.env.ADMIN_EMAIL || 'admin@perfumeria.com';
+            
+            if (apiKey) {
+                // Recuperamos la orden con los nombres de los productos
+                const orderWithItems = await prisma.order.findUnique({
+                    where: { id: order.id },
+                    include: {
+                        items: {
+                            include: {
+                                variant: {
+                                    include: { perfume: true }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                if (orderWithItems) {
+                    let htmlMessage = `
+                        <h2>🛒 ¡NUEVO PEDIDO RECIBIDO!</h2>
+                        <hr />
+                        <p><strong>👤 Cliente:</strong> ${data.customerName}</p>
+                        <p><strong>📧 Email:</strong> ${data.customerEmail}</p>
+                        <h3>🛍️ Productos:</h3>
+                        <ul>
+                    `;
+                    
+                    orderWithItems.items.forEach(item => {
+                        htmlMessage += `<li>${item.quantity}x ${item.variant.perfume.name} (${item.variant.size}) - $${Number(item.quantity) * Number(item.price)}</li>`;
+                    });
+                    
+                    htmlMessage += `
+                        </ul>
+                        <br />
+                        <h3>💰 TOTAL: $${data.total}</h3>
+                        <p><small>Este pedido está ahora pendiente en tu panel de administrador.</small></p>
+                    `;
+
+                    await resend.emails.send({
+                        from: 'Soporte Perfumeria <onboarding@resend.dev>',
+                        to: [adminEmail],
+                        subject: `Nuevo pedido de ${data.customerName} - $${data.total}`,
+                        html: htmlMessage
+                    });
+                }
+            } else {
+                 console.warn("Falta RESEND_API_KEY para enviar el correo");
+            }
+        } catch (error) {
+            console.error("Error al enviar notificación de correo:", error);
+        }
 
         revalidatePath("/admin");
         return { success: true, orderId: order.id };
@@ -142,6 +200,14 @@ export async function updateProduct(id: string, data: {
         console.error("Failed to update product:", error);
         return { success: false };
     }
+}
+
+export async function getPerfumesByIds(ids: string[]) {
+    if (!ids || ids.length === 0) return [];
+    return await prisma.perfume.findMany({
+        where: { id: { in: ids } },
+        include: { variants: true }
+    });
 }
 
 export async function deleteProduct(id: string) {

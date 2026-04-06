@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 interface ProductGalleryProps {
     images: string[];
@@ -50,14 +51,25 @@ export default function ProductGallery({ images, name, category }: ProductGaller
             </div>
 
             {/* Main Image */}
-            <div className="relative flex-grow aspect-[4/5] bg-white overflow-hidden group order-1 md:order-2 border border-border/10">
-                <Image
-                    src={images[activeIndex]}
-                    alt={name}
-                    fill
-                    className="object-contain p-12 transition-transform duration-700"
-                    priority
-                />
+            <motion.div 
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6 }}
+                className="relative flex-grow aspect-[4/5] bg-white overflow-hidden group order-1 md:order-2 border border-border/10 cursor-crosshair"
+            >
+                <div className="absolute inset-0 w-full h-full scale-[1] group-hover:scale-[1.5] transition-transform duration-[800ms] ease-out">
+                    <Image
+                        src={images[activeIndex]}
+                        alt={name}
+                        fill
+                        className="object-contain p-12"
+                        priority
+                    />
+                </div>
+                {/* Zoom Icon Hint */}
+                <div className="absolute top-4 right-4 text-muted/30 group-hover:text-accent/50 transition-colors z-10">
+                    <ZoomIn size={24} />
+                </div>
                 {/* Category Tag */}
                 {category && (
                     <span className="absolute top-4 left-4 text-[10px] uppercase tracking-widest font-sans bg-background/60 border border-accent/30 text-accent px-3 py-1.5 glass z-20">
@@ -84,11 +96,11 @@ export default function ProductGallery({ images, name, category }: ProductGaller
 
                 {/* Counter */}
                 {images.length > 1 && (
-                    <div className="absolute bottom-4 right-4 bg-background/60 backdrop-blur-md px-3 py-1 text-[10px] uppercase tracking-widest font-sans border border-border/20">
+                    <div className="absolute bottom-4 right-4 bg-background/60 backdrop-blur-md px-3 py-1 text-[10px] uppercase tracking-widest font-sans border border-border/20 z-10 pointer-events-none">
                         {activeIndex + 1} / {images.length}
                     </div>
                 )}
-            </div>
+            </motion.div>
         </div>
     );
 }

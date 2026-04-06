@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 import { CartProvider } from "@/context/CartContext";
+import { WishlistProvider } from "@/context/WishlistContext";
 import WhatsAppButton from "@/components/WhatsAppButton";
 
 export default function RootLayout({
@@ -28,10 +29,12 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${playfair.variable} ${montserrat.variable}`}>
       <body className="font-sans antialiased text-foreground bg-background">
-        <CartProvider>
-          {children}
-          <WhatsAppButton />
-        </CartProvider>
+        <WishlistProvider>
+          <CartProvider>
+            {children}
+            <WhatsAppButton />
+          </CartProvider>
+        </WishlistProvider>
       </body>
     </html>
   );

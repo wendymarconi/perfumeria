@@ -1,15 +1,17 @@
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
 import { prisma } from "@/lib/prisma";
+import FadeIn from "@/components/FadeIn";
+import Link from "next/link";
 
 export default async function CatalogPage({
     searchParams,
 }: {
-    searchParams: Promise<{ category?: string; gender?: string; q?: string }>;
+    searchParams: Promise<{ category?: string; gender?: string; q?: string; sort?: string }>;
 }) {
-    const { category, gender, q } = await searchParams;
+    const { category, gender, q, sort } = await searchParams;
 
-    const perfumes = await prisma.perfume.findMany({
+    let perfumes = await prisma.perfume.findMany({
         where: {
             AND: [
                 category ? { category } : {},
@@ -33,6 +35,20 @@ export default async function CatalogPage({
         },
     });
 
+    if (sort === 'price-asc') {
+        perfumes.sort((a, b) => {
+            const minA = a.variants.length ? Math.min(...a.variants.map(v => v.price)) : 0;
+            const minB = b.variants.length ? Math.min(...b.variants.map(v => v.price)) : 0;
+            return minA - minB;
+        });
+    } else if (sort === 'price-desc') {
+        perfumes.sort((a, b) => {
+            const minA = a.variants.length ? Math.min(...a.variants.map(v => v.price)) : 0;
+            const minB = b.variants.length ? Math.min(...b.variants.map(v => v.price)) : 0;
+            return minB - minA;
+        });
+    }
+
     const categories = ["Arabe", "Nicho", "Diseñador"];
     const genders = ["Male", "Female", "Unisex"];
 
@@ -53,9 +69,28 @@ export default async function CatalogPage({
                 <div className="flex flex-col lg:flex-row gap-12">
                     {/* Filters Sidebar */}
                     <aside className="w-full lg:w-64 flex-shrink-0">
-                        <div className="sticky top-32 space-y-10">
-                            {/* Category Filter */}
-                            <div>
+                        <FadeIn direction="right">
+                            <div className="sticky top-32 space-y-10">
+                                {/* Order Filter */}
+                                <div>
+                                    <h3 className="text-xs uppercase tracking-widest font-sans mb-6 opacity-50">
+                                        Ordenar Por
+                                    </h3>
+                                    <div className="flex flex-col gap-3">
+                                        <Link href={`/catalogo?${new URLSearchParams({ ...(category && {category}), ...(gender && {gender}) }).toString()}`} className={`text-sm uppercase tracking-widest hover:text-accent transition-colors ${!sort ? "text-accent font-medium" : "text-muted"}`}>
+                                            Novedades
+                                        </Link>
+                                        <Link href={`/catalogo?${new URLSearchParams({ sort: 'price-asc', ...(category && {category}), ...(gender && {gender}) }).toString()}`} className={`text-sm uppercase tracking-widest hover:text-accent transition-colors ${sort === 'price-asc' ? "text-accent font-medium" : "text-muted"}`}>
+                                            Precio: Menor a Mayor
+                                        </Link>
+                                        <Link href={`/catalogo?${new URLSearchParams({ sort: 'price-desc', ...(category && {category}), ...(gender && {gender}) }).toString()}`} className={`text-sm uppercase tracking-widest hover:text-accent transition-colors ${sort === 'price-desc' ? "text-accent font-medium" : "text-muted"}`}>
+                                            Precio: Mayor a Menor
+                                        </Link>
+                                    </div>
+                                </div>
+                                
+                                {/* Category Filter */}
+                                <div>
                                 <h3 className="text-xs uppercase tracking-widest font-sans mb-6 opacity-50">
                                     Categoría
                                 </h3>
@@ -112,17 +147,17 @@ export default async function CatalogPage({
                                 </ul>
                             </div>
                         </div>
+                        </FadeIn>
                     </aside>
 
                     {/* Main Content */}
                     <div className="flex-grow">
                         {perfumes.length > 0 ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
-                                {perfumes.map((perfume) => (
-                                    <ProductCard
-                                        key={perfume.id}
-                                        perfume={perfume}
-                                    />
+                                {perfumes.map((perfume, idx) => (
+                                    <FadeIn key={perfume.id} delay={0.05 * idx}>
+                                        <ProductCard perfume={perfume} />
+                                    </FadeIn>
                                 ))}
                             </div>
                         ) : (

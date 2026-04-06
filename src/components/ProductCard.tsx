@@ -1,11 +1,21 @@
+"use client";
+
 import Image from "next/image";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Heart } from "lucide-react";
 import Link from "next/link";
 import { formatPrice } from '@/lib/formatters';
+import { useWishlist } from "@/context/WishlistContext";
 
 export default function ProductCard({ perfume }: { perfume: any }) {
     const prices = perfume.variants.map((v: any) => v.price).filter((p: number) => p > 0);
     const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+    const { isInWishlist, toggleWishlist } = useWishlist();
+    const isWished = isInWishlist(perfume.id);
+
+    const handleWishlist = (e: React.MouseEvent) => {
+        e.preventDefault();
+        toggleWishlist(perfume.id);
+    };
 
     return (
         <Link href={`/producto/${perfume.id}`} className="group block">
@@ -22,6 +32,17 @@ export default function ProductCard({ perfume }: { perfume: any }) {
                 <span className="absolute top-4 left-4 bg-background/80 backdrop-blur-sm px-2 py-1 text-[8px] uppercase tracking-widest">
                     {perfume.gender === 'Male' ? 'Hombre' : perfume.gender === 'Female' ? 'Mujer' : perfume.gender}
                 </span>
+
+                {/* Wishlist Button */}
+                <button 
+                    onClick={handleWishlist}
+                    className="absolute top-4 right-4 p-2 rounded-full bg-white/50 backdrop-blur-sm hover:bg-white transition-colors z-10"
+                >
+                    <Heart 
+                        size={16} 
+                        className={isWished ? "fill-red-500 text-red-500" : "text-foreground"} 
+                    />
+                </button>
             </div>
 
             <div className="flex flex-col gap-1 text-center sm:text-left px-1">

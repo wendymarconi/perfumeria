@@ -2,35 +2,32 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import Navbar from '@/components/Navbar';
-import { Clock, CheckCircle2, Truck, XCircle, ChevronRight, Package, ShoppingCart, Edit2, Save, Trash2, Camera, Upload, Image as ImageIcon, Plus, Trash, PlusCircle, MinusCircle, LogIn, Eye, EyeOff } from 'lucide-react';
-import { getOrders, updateOrderStatus, getAdminProducts, updateProduct, updateVariant, createProduct, deleteProduct, createVariant, deleteVariant, adminLogin } from '@/lib/actions';
+import { Clock, CheckCircle2, Truck, XCircle, ChevronRight, Package, ShoppingCart, Edit2, Save, Trash2, Camera, Upload, Image as ImageIcon, Plus, Trash, PlusCircle, MinusCircle, LogIn, Eye, EyeOff, BarChart2 } from 'lucide-react';
+import { getOrders, updateOrderStatus, getAdminProducts, updateProduct, updateVariant, createProduct, deleteProduct, createVariant, deleteVariant, adminLogin, getCarouselImages, addVariant, updateCarouselImage, deleteCarouselImage } from '@/lib/actions';
 import { formatPrice } from '@/lib/formatters';
+import AdminCharts from '@/components/AdminCharts';
 
 export default function AdminPage() {
-    const [activeTab, setActiveTab] = useState<'orders' | 'inventory' | 'create' | 'carousel'>('orders');
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [emailInput, setEmailInput] = useState('');
-    const [passwordInput, setPasswordInput] = useState('');
+    const [activeTab, setActiveTab] = useState<'orders' | 'inventory' | 'create' | 'carousel' | 'stats'>('orders');
     
-    const [orders, setOrders] = useState<any[]>([]);
-    const [products, setProducts] = useState<any[]>([]);
-    const [carouselImages, setCarouselImages] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [editingProduct, setEditingProduct] = useState<string | null>(null);
-    const [editData, setEditData] = useState<any>({});
-    const fileInputRef = React.useRef<HTMLInputElement>(null);
-    const editFileInputRef = React.useRef<HTMLInputElement>(null);
-
     // Auth
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loginEmail, setLoginEmail] = useState('admin@perfumeria.com');
     const [loginPassword, setLoginPassword] = useState('');
+    const [products, setProducts] = useState<any[]>([]);
+    const [orders, setOrders] = useState<any[]>([]);
+    const [carouselImages, setCarouselImages] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [editingProduct, setEditingProduct] = useState<string | null>(null);
+    const [isAddingVariant, setIsAddingVariant] = useState<string | null>(null);
+    const [newVariantData, setNewVariantData] = useState({ size: '', price: 0, stock: 0 });
+    const [editData, setEditData] = useState<any>({});
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const editFileInputRef = React.useRef<HTMLInputElement>(null);
+
     const [loginError, setLoginError] = useState('');
     const [loginLoading, setLoginLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const editFileInputRef = useRef<HTMLInputElement>(null);
 
     // Filtros de Inventario
     const [searchName, setSearchName] = useState('');
@@ -104,8 +101,9 @@ export default function AdminPage() {
 
     useEffect(() => {
 
-        if (activeTab === 'orders') {
+        if (activeTab === 'orders' || activeTab === 'stats') {
             fetchOrders();
+            if (activeTab === 'stats') fetchProducts(); // We need products for the inventory pie chart
         } else if (activeTab === 'inventory') {
             fetchProducts();
         } else if (activeTab === 'carousel') {
@@ -395,6 +393,15 @@ export default function AdminPage() {
                             </div>
                         </button>
                         <button
+                            onClick={() => setActiveTab('stats')}
+                            className={`px-6 py-2.5 text-[10px] uppercase tracking-widest transition-all ${activeTab === 'stats' ? 'bg-accent text-accent-foreground' : 'text-muted hover:text-foreground'}`}
+                        >
+                            <div className="flex items-center gap-2">
+                                <BarChart2 size={14} />
+                                <span>Estadísticas</span>
+                            </div>
+                        </button>
+                        <button
                             onClick={() => setActiveTab('create')}
                             className={`px-6 py-2.5 text-[10px] uppercase tracking-widest transition-all ${activeTab === 'create' ? 'bg-accent text-accent-foreground' : 'text-muted hover:text-foreground'}`}
                         >
@@ -549,6 +556,8 @@ export default function AdminPage() {
                             ))}
                         </div>
                     )
+                ) : activeTab === 'stats' ? (
+                    <AdminCharts orders={orders} products={products} />
                 ) : activeTab === 'inventory' ? (
                     /* INVENTORY TAB */
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
