@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import Navbar from '@/components/Navbar';
-import { Clock, CheckCircle2, Truck, XCircle, ChevronRight, Package, ShoppingCart, Edit2, Save, Trash2, Camera, Upload, Image as ImageIcon, Plus, Trash, PlusCircle, MinusCircle, LogIn, Eye, EyeOff, BarChart2 } from 'lucide-react';
+import { Clock, CheckCircle2, Truck, XCircle, ChevronLeft, ChevronRight, Package, ShoppingCart, Edit2, Save, Trash2, Camera, Upload, Image as ImageIcon, Plus, Trash, PlusCircle, MinusCircle, LogIn, Eye, EyeOff, BarChart2 } from 'lucide-react';
 import { getOrders, updateOrderStatus, getAdminProducts, updateProduct, updateVariant, createProduct, deleteProduct, createVariant, deleteVariant, adminLogin, getCarouselImages, addVariant, updateCarouselImage, deleteCarouselImage } from '@/lib/actions';
 import { formatPrice } from '@/lib/formatters';
 import AdminCharts from '@/components/AdminCharts';
