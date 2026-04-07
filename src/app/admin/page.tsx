@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import { Clock, CheckCircle2, Truck, XCircle, ChevronLeft, ChevronRight, Package, ShoppingCart, Edit2, Save, Trash2, Camera, Upload, Image as ImageIcon, Plus, Trash, PlusCircle, MinusCircle, LogIn, Eye, EyeOff, BarChart2 } from 'lucide-react';
-import { getOrders, updateOrderStatus, getAdminProducts, updateProduct, updateVariant, createProduct, deleteProduct, createVariant, deleteVariant, adminLogin, getCarouselImages, addVariant, updateCarouselImage, deleteCarouselImage } from '@/lib/actions';
+import { getOrders, updateOrderStatus, getAdminProducts, getAdminProductIds, getAdminProductById, updateProduct, updateVariant, createProduct, deleteProduct, createVariant, deleteVariant, adminLogin, getCarouselImages, addVariant, updateCarouselImage, deleteCarouselImage } from '@/lib/actions';
 import { formatPrice } from '@/lib/formatters';
 import AdminCharts from '@/components/AdminCharts';
 
@@ -333,77 +333,96 @@ export default function AdminPage() {
     };
 
     const handleOptimizeAllImages = async () => {
-        if (!confirm('Esto optimizará todas las imágenes de tu inventario para reducir su peso considerablemente. El proceso puede tardar unos minutos. ¿Deseas continuar?')) return;
+        if (!confirm('Esto optimizará todas las imágenes de tu inventario UNA POR UNA para reducir su peso considerablemente. El proceso puede tardar unos minutos. ¿Deseas continuar?')) return;
         
         setIsOptimizing(true);
         setOptimizationProgress(0);
         
         try {
-            const allProducts = await getAdminProducts();
-            const total = allProducts.length;
+            // Paso 1: Obtener solo la lista de IDs para no saturar la transferencia
+            const productList = await getAdminProductIds();
+            const total = productList.length;
             
-            for (let i = 0; i < total; i++) {
-                const product = allProducts[i];
-                let needsUpdate = false;
-                
-                // Procesar imágenes secundarias
-                let currentImages = [];
-                try {
-                    currentImages = JSON.parse(product.images || '[]');
-                } catch (e) {
-                    currentImages = product.mainImage ? [product.mainImage] : [];
-                }
-                
-                const newImages = [];
-                for (const img of currentImages) {
-                    if (img.startsWith('data:image') && img.length > 200000) { // Solo si son Base64 y pesan > 200KB aprox
-                        const compressed = await compressImage(img);
-                        newImages.push(compressed);
-                        needsUpdate = true;
-                    } else {
-                        newImages.push(img);
-                    }
-                }
-                
-                // Procesar imagen principal si no está en las secundarias o es distinta
-                let newMainImage = product.mainImage;
-                if (product.mainImage?.startsWith('data:image') && product.mainImage.length > 200000) {
-                    newMainImage = await compressImage(product.mainImage);
-                    needsUpdate = true;
-                }
+            console.log(`Iniciando optimización de ${total} productos...`);
 
-                if (needsUpdate) {
-                    await updateProduct(product.id, {
-                        brand: product.brand,
-                        name: product.name,
-                        category: product.category,
-                        description: product.description,
-                        notes: product.notes,
-                        accords: product.accords ?? undefined,
-                        gender: product.gender,
-                        mainImage: newMainImage,
-                        images: JSON.stringify(newImages)
-                    });
+            for (let i = 0; i < total; i++) {
+                try {
+                    // Paso 2: Obtener datos completos de UN solo producto a la vez
+                    const product = await getAdminProductById(productList[i].id);
+                    if (!product) continue;
+
+                    let needsUpdate = false;
+                    
+                    // Procesar imágenes secundarias
+                    let currentImages = [];
+                    try {
+                        currentImages = JSON.parse(product.images || '[]');
+                    } catch (e) {
+                        currentImages = product.mainImage ? [product.mainImage] : [];
+                    }
+                    
+                    const newImages = [];
+                    for (const img of currentImages) {
+                        // Optimizar si es Base64 y mayor a ~200KB
+                        if (img.startsWith('data:image') && img.length > 200000) {
+                            const compressed = await compressImage(img);
+                            newImages.push(compressed);
+                            needsUpdate = true;
+                        } else {
+                            newImages.push(img);
+                        }
+                    }
+                    
+                    // Procesar imagen principal
+                    let newMainImage = product.mainImage;
+                    if (product.mainImage?.startsWith('data:image') && product.mainImage.length > 200000) {
+                        newMainImage = await compressImage(product.mainImage);
+                        needsUpdate = true;
+                    }
+
+                    if (needsUpdate) {
+                        await updateProduct(product.id, {
+                            brand: product.brand,
+                            name: product.name,
+                            category: product.category,
+                            description: product.description,
+                            notes: product.notes,
+                            accords: product.accords ?? undefined,
+                            gender: product.gender,
+                            mainImage: newMainImage,
+                            images: JSON.stringify(newImages)
+                        });
+                        console.log(`Optimizado: ${product.name}`);
+                    }
+                } catch (prodError) {
+                    console.error(`Error procesando "${productList[i].name}":`, prodError);
+                    // Seguimos con el resto para no bloquear todo el proceso
                 }
                 
                 setOptimizationProgress(Math.round(((i + 1) / total) * 100));
+                // Respiro de 300ms entre productos para cuidar la cuota de conexión
+                await new Promise(resolve => setTimeout(resolve, 300));
             }
 
-            // También optimizar carrusel
-            const carousel = await getCarouselImages();
-            for (const item of carousel) {
-                if (item.imageUrl.startsWith('data:image') && item.imageUrl.length > 200000) {
-                    const compressed = await compressImage(item.imageUrl);
-                    await updateCarouselImage(item.id, { imageUrl: compressed, order: item.order });
+            // También optimizamos el Carrusel
+            try {
+                const carousel = await getCarouselImages();
+                for (const item of carousel) {
+                    if (item.imageUrl.startsWith('data:image') && item.imageUrl.length > 200000) {
+                        const compressed = await compressImage(item.imageUrl);
+                        await updateCarouselImage(item.id, { imageUrl: compressed, order: item.order });
+                    }
                 }
+            } catch (carError) {
+                console.error('Error optimizando carrusel:', carError);
             }
 
-            alert('¡Optimización completada con éxito! Tus imágenes ahora ocupan mucho menos espacio.');
+            alert('¡Optimización terminada! Tus imágenes ahora son mucho más ligeras.');
             fetchProducts();
             fetchCarousel();
         } catch (error) {
-            console.error('Error durante la optimización:', error);
-            alert('Hubo un error durante la optimización. Por favor reintenta luego.');
+            console.error('Error crítico en el inicio de optimización:', error);
+            alert('No se pudo establecer conexión inicial con la base de datos para optimizar. Posiblemente la cuota esté totalmente agotada hoy.');
         } finally {
             setIsOptimizing(false);
         }

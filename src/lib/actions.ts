@@ -176,6 +176,27 @@ export async function getAdminProducts() {
     });
 }
 
+export async function getAdminProductIds() {
+    return await prisma.perfume.findMany({
+        select: {
+            id: true,
+            name: true
+        },
+        orderBy: {
+            createdAt: 'desc'
+        }
+    });
+}
+
+export async function getAdminProductById(id: string) {
+    return await prisma.perfume.findUnique({
+        where: { id },
+        include: {
+            variants: true
+        }
+    });
+}
+
 export async function updateProduct(id: string, data: {
     brand?: string;
     name?: string;
