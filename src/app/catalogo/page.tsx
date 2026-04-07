@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import FadeIn from "@/components/FadeIn";
 import Link from "next/link";
 
+export const dynamic = 'force-dynamic';
+
 export default async function CatalogPage({
     searchParams,
 }: {
@@ -11,40 +13,46 @@ export default async function CatalogPage({
 }) {
     const { category, gender, q, sort } = await searchParams;
 
-    let perfumes = await prisma.perfume.findMany({
-        where: {
-            AND: [
-                category ? { category } : {},
-                gender ? { gender } : {},
-                q ? {
-                    OR: [
-                        { name: { contains: q, mode: "insensitive" } },
-                        { brand: { contains: q, mode: "insensitive" } },
-                        { description: { contains: q, mode: "insensitive" } },
-                        { notes: { contains: q, mode: "insensitive" } }
-                    ]
-                } : {}
-            ],
-        },
-        include: {
-            variants: {
-                orderBy: {
-                    price: "asc",
+    let perfumes: any[] = [];
+    
+    try {
+        perfumes = await prisma.perfume.findMany({
+            where: {
+                AND: [
+                    category ? { category } : {},
+                    gender ? { gender } : {},
+                    q ? {
+                        OR: [
+                            { name: { contains: q, mode: "insensitive" } },
+                            { brand: { contains: q, mode: "insensitive" } },
+                            { description: { contains: q, mode: "insensitive" } },
+                            { notes: { contains: q, mode: "insensitive" } }
+                        ]
+                    } : {}
+                ],
+            },
+            include: {
+                variants: {
+                    orderBy: {
+                        price: "asc",
+                    },
                 },
             },
-        },
-    });
+        });
+    } catch (error) {
+        console.error("Error al cargar Catálogo (posible cuota excedida):", error);
+    }
 
     if (sort === 'price-asc') {
         perfumes.sort((a, b) => {
-            const minA = a.variants.length ? Math.min(...a.variants.map(v => v.price)) : 0;
-            const minB = b.variants.length ? Math.min(...b.variants.map(v => v.price)) : 0;
+            const minA = a.variants.length ? Math.min(...a.variants.map((v: any) => v.price)) : 0;
+            const minB = b.variants.length ? Math.min(...b.variants.map((v: any) => v.price)) : 0;
             return minA - minB;
         });
     } else if (sort === 'price-desc') {
         perfumes.sort((a, b) => {
-            const minA = a.variants.length ? Math.min(...a.variants.map(v => v.price)) : 0;
-            const minB = b.variants.length ? Math.min(...b.variants.map(v => v.price)) : 0;
+            const minA = a.variants.length ? Math.min(...a.variants.map((v: any) => v.price)) : 0;
+            const minB = b.variants.length ? Math.min(...b.variants.map((v: any) => v.price)) : 0;
             return minB - minA;
         });
     }

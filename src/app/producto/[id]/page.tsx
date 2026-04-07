@@ -9,6 +9,8 @@ import ProductActions from "@/components/ProductActions";
 import ProductGallery from "@/components/ProductGallery";
 import ProductAccords from "@/components/ProductAccords";
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProductDetailPage({
     params,
 }: {
@@ -16,16 +18,21 @@ export default async function ProductDetailPage({
 }) {
     const { id } = await params;
 
-    const perfume = await prisma.perfume.findUnique({
-        where: { id },
-        include: {
-            variants: {
-                orderBy: {
-                    price: "asc",
+    let perfume = null;
+    try {
+        perfume = await prisma.perfume.findUnique({
+            where: { id },
+            include: {
+                variants: {
+                    orderBy: {
+                        price: "asc",
+                    },
                 },
             },
-        },
-    });
+        });
+    } catch (error) {
+        console.error("Error al cargar producto (posible cuota excedida):", error);
+    }
 
     if (!perfume) {
         notFound();

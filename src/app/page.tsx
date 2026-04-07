@@ -5,19 +5,28 @@ import { prisma } from "@/lib/prisma";
 import { getCarouselImages } from "@/lib/actions";
 import FadeIn from "@/components/FadeIn";
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
-  const featuredPerfumes = await prisma.perfume.findMany({
-    take: 4,
-    include: {
-      variants: {
-        orderBy: {
-          price: 'asc'
+  let featuredPerfumes: any[] = [];
+  let carouselImages: any[] = [];
+
+  try {
+    featuredPerfumes = await prisma.perfume.findMany({
+      take: 4,
+      include: {
+        variants: {
+          orderBy: {
+            price: 'asc'
+          }
         }
       }
-    }
-  });
+    });
 
-  const carouselImages = await getCarouselImages();
+    carouselImages = await getCarouselImages();
+  } catch (error) {
+    console.error("Error al cargar datos de inicio (posible cuota excedida):", error);
+  }
 
   return (
     <div className="min-h-screen bg-background">
