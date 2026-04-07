@@ -112,24 +112,40 @@ export default function AdminPage() {
     }, [activeTab, isAuthenticated]);
 
     async function fetchCarousel() {
-        setIsLoading(true);
-        const data = await getCarouselImages();
-        setCarouselImages(data);
-        setIsLoading(false);
+        try {
+            setIsLoading(true);
+            const data = await getCarouselImages();
+            setCarouselImages(data);
+        } catch (error) {
+            console.error('Error fetching carousel:', error);
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     async function fetchOrders() {
-        setIsLoading(true);
-        const data = await getOrders();
-        setOrders(data);
-        setIsLoading(false);
+        try {
+            setIsLoading(true);
+            const data = await getOrders();
+            setOrders(data);
+        } catch (error) {
+            console.error('Error fetching orders:', error);
+            setLoginError('Error al cargar pedidos. Verifica la base de datos.');
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     async function fetchProducts() {
-        setIsLoading(true);
-        const data = await getAdminProducts();
-        setProducts(data);
-        setIsLoading(false);
+        try {
+            setIsLoading(true);
+            const data = await getAdminProducts();
+            setProducts(data);
+        } catch (error) {
+            console.error('Error fetching products:', error);
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     async function handleStatusChange(orderId: string, newStatus: string) {

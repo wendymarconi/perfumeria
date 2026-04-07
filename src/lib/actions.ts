@@ -4,27 +4,28 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 
 export async function adminLogin(email: string, password: string) {
     try {
         const adminEmail = process.env.ADMIN_EMAIL || 'admin@perfumeria.com';
-        const adminPassword = process.env.ADMIN_PASSWORD;
+        const adminPassword = process.env.ADMIN_PASSWORD || process.env.CONTRASEÑA_DE_ADMINISTRADOR;
 
         if (!adminPassword) {
-            console.error('ADMIN_PASSWORD no está configurada en las variables de entorno.');
-            return { success: false, error: 'Error de configuración del servidor.' };
+            console.error('ADMIN_PASSWORD (o CONTRASEÑA_DE_ADMINISTRADOR) no está configurada.');
+            return { success: false, error: 'Error de configuración: Contraseña no definida en Vercel.' };
         }
 
         if (email === adminEmail && password === adminPassword) {
             return { success: true };
         }
 
+        console.warn(`Intento de login fallido para: ${email}`);
         return { success: false, error: 'Email o contraseña incorrectos.' };
     } catch (error) {
-        console.error('adminLogin error:', error);
-        return { success: false, error: 'Error en el servidor.' };
+        console.error('adminLogin error crítico:', error);
+        return { success: false, error: 'Error interno en el servidor.' };
     }
 }
 
@@ -62,10 +63,9 @@ export async function createOrder(data: {
 
         // Enviar notificación por Correo Electrónico usando Resend
         try {
-            const apiKey = process.env.RESEND_API_KEY;
             const adminEmail = process.env.ADMIN_EMAIL || 'admin@perfumeria.com';
             
-            if (apiKey) {
+            if (resend) {
                 // Recuperamos la orden con los nombres de los productos
                 const orderWithItems = await prisma.order.findUnique({
                     where: { id: order.id },
