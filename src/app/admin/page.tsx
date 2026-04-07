@@ -29,6 +29,10 @@ export default function AdminPage() {
     const [loginLoading, setLoginLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
+    // Optimización de Imágenes
+    const [isOptimizing, setIsOptimizing] = useState(false);
+    const [optimizationProgress, setOptimizationProgress] = useState(0);
+
     // Filtros de Inventario
     const [searchName, setSearchName] = useState('');
     const [searchBrand, setSearchBrand] = useState('');
@@ -228,19 +232,50 @@ export default function AdminPage() {
         setIsLoading(false);
     }
 
+    const compressImage = (base64Str: string, maxWidth = 1000, maxHeight = 1000, quality = 0.7): Promise<string> => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.src = base64Str;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height *= maxWidth / width;
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width *= maxHeight / height;
+                        height = maxHeight;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx?.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+        });
+    };
+
     const handleCarouselUpload = (e: React.ChangeEvent<HTMLInputElement>, index: number, id: string | null) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        if (file.size > 2 * 1024 * 1024) {
-            alert('La imagen es demasiado grande. Máximo 2MB.');
+        if (file.size > 10 * 1024 * 1024) { // Relajamos el límite ya que comprimiremos
+            alert('La imagen es demasiado grande. Máximo 10MB.');
             return;
         }
 
         const reader = new FileReader();
         reader.onloadend = async () => {
-            const base64String = reader.result as string;
-            await updateCarouselImage(id, { imageUrl: base64String, order: index });
+            const base64Original = reader.result as string;
+            const base64Compressed = await compressImage(base64Original);
+            await updateCarouselImage(id, { imageUrl: base64Compressed, order: index });
             fetchCarousel();
         };
         reader.readAsDataURL(file);
@@ -250,29 +285,31 @@ export default function AdminPage() {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        if (file.size > 2 * 1024 * 1024) {
-            alert('La imagen es demasiado grande. Por favor usa una imagen de menos de 2MB.');
+        if (file.size > 10 * 1024 * 1024) {
+            alert('La imagen es demasiado grande. Por favor usa una imagen de menos de 10MB.');
             return;
         }
 
         const reader = new FileReader();
-        reader.onloadend = () => {
-            const base64String = reader.result as string;
+        reader.onloadend = async () => {
+            const base64Original = reader.result as string;
+            const base64Compressed = await compressImage(base64Original);
+            
             if (isEdit) {
                 const currentImages = JSON.parse(editData.images || '[]');
                 if (index !== undefined) {
-                    currentImages[index] = base64String;
+                    currentImages[index] = base64Compressed;
                 } else if (currentImages.length < 5) {
-                    currentImages.push(base64String);
+                    currentImages.push(base64Compressed);
                 }
                 const mainImg = currentImages[0] || '';
                 setEditData({ ...editData, images: JSON.stringify(currentImages), mainImage: mainImg });
             } else {
                 const currentImages = JSON.parse(newProductData.images || '[]');
                 if (index !== undefined) {
-                    currentImages[index] = base64String;
+                    currentImages[index] = base64Compressed;
                 } else if (currentImages.length < 5) {
-                    currentImages.push(base64String);
+                    currentImages.push(base64Compressed);
                 }
                 const mainImg = currentImages[0] || '';
                 setNewProductData({ ...newProductData, images: JSON.stringify(currentImages), mainImage: mainImg });
@@ -292,6 +329,83 @@ export default function AdminPage() {
             currentImages.splice(index, 1);
             const mainImg = currentImages[0] || '';
             setNewProductData({ ...newProductData, images: JSON.stringify(currentImages), mainImage: mainImg });
+        }
+    };
+
+    const handleOptimizeAllImages = async () => {
+        if (!confirm('Esto optimizará todas las imágenes de tu inventario para reducir su peso considerablemente. El proceso puede tardar unos minutos. ¿Deseas continuar?')) return;
+        
+        setIsOptimizing(true);
+        setOptimizationProgress(0);
+        
+        try {
+            const allProducts = await getAdminProducts();
+            const total = allProducts.length;
+            
+            for (let i = 0; i < total; i++) {
+                const product = allProducts[i];
+                let needsUpdate = false;
+                
+                // Procesar imágenes secundarias
+                let currentImages = [];
+                try {
+                    currentImages = JSON.parse(product.images || '[]');
+                } catch (e) {
+                    currentImages = product.mainImage ? [product.mainImage] : [];
+                }
+                
+                const newImages = [];
+                for (const img of currentImages) {
+                    if (img.startsWith('data:image') && img.length > 200000) { // Solo si son Base64 y pesan > 200KB aprox
+                        const compressed = await compressImage(img);
+                        newImages.push(compressed);
+                        needsUpdate = true;
+                    } else {
+                        newImages.push(img);
+                    }
+                }
+                
+                // Procesar imagen principal si no está en las secundarias o es distinta
+                let newMainImage = product.mainImage;
+                if (product.mainImage?.startsWith('data:image') && product.mainImage.length > 200000) {
+                    newMainImage = await compressImage(product.mainImage);
+                    needsUpdate = true;
+                }
+
+                if (needsUpdate) {
+                    await updateProduct(product.id, {
+                        brand: product.brand,
+                        name: product.name,
+                        category: product.category,
+                        description: product.description,
+                        notes: product.notes,
+                        accords: product.accords ?? undefined,
+                        gender: product.gender,
+                        mainImage: newMainImage,
+                        images: JSON.stringify(newImages)
+                    });
+                }
+                
+                setOptimizationProgress(Math.round(((i + 1) / total) * 100));
+            }
+
+            // También optimizar carrusel
+            const carousel = await getCarouselImages();
+            for (const item of carousel) {
+                if (item.imageUrl.startsWith('data:image') && item.imageUrl.length > 200000) {
+                    const compressed = await compressImage(item.imageUrl);
+                    await updateCarouselImage(item.id, { imageUrl: compressed, order: item.order });
+                }
+            }
+
+            alert('¡Optimización completada con éxito! Tus imágenes ahora ocupan mucho menos espacio.');
+            fetchProducts();
+            fetchCarousel();
+        } catch (error) {
+            console.error('Error durante la optimización:', error);
+            alert('Hubo un error durante la optimización. Por favor reintenta luego.');
+        } finally {
+            setIsOptimizing(false);
         }
     };
 
@@ -573,7 +687,46 @@ export default function AdminPage() {
                         </div>
                     )
                 ) : activeTab === 'stats' ? (
-                    <AdminCharts orders={orders} products={products} />
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                        <AdminCharts orders={orders} products={products} />
+                        
+                        {/* Image Optimization Section */}
+                        <div className="bg-card border border-accent/20 p-10 glass relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-5">
+                                <ImageIcon size={120} />
+                            </div>
+                            <div className="relative z-10 w-full max-w-2xl mx-auto text-center">
+                                <span className="text-[10px] uppercase tracking-[0.4em] text-accent font-sans mb-4 block">Mantenimiento de Sistema</span>
+                                <h3 className="text-2xl font-serif mb-6 italic">Optimizador de Imágenes</h3>
+                                <p className="text-sm font-sans opacity-70 mb-8 leading-relaxed">
+                                    Esta herramienta reducirá el peso de todas las fotos de tu inventario sin perder calidad visual. 
+                                    Esto ayuda a que la página cargue más rápido y a no superar los límites de almacenamiento.
+                                </p>
+                                
+                                {isOptimizing ? (
+                                    <div className="space-y-6">
+                                        <div className="w-full bg-background/50 h-2 border border-border/10 overflow-hidden">
+                                            <div 
+                                                className="bg-accent h-full transition-all duration-500" 
+                                                style={{ width: `${optimizationProgress}%` }}
+                                            />
+                                        </div>
+                                        <p className="text-[10px] uppercase tracking-widest text-accent animate-pulse">
+                                            Optimizando: {optimizationProgress}% completo...
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <button 
+                                        onClick={handleOptimizeAllImages}
+                                        className="inline-flex items-center gap-3 px-10 py-4 bg-accent text-accent-foreground text-[10px] uppercase tracking-[0.3em] hover:bg-white hover:text-black transition-all"
+                                    >
+                                        <Camera size={14} />
+                                        <span>Comenzar Optimización Total</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 ) : activeTab === 'inventory' ? (
                     /* INVENTORY TAB */
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
