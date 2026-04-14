@@ -14,45 +14,58 @@ export default function ProductCard({ perfume }: { perfume: any }) {
 
     const handleWishlist = (e: React.MouseEvent) => {
         e.preventDefault();
+        e.stopPropagation();
         toggleWishlist(perfume.id);
     };
 
     return (
         <Link href={`/producto/${perfume.id}`} className="group block">
-            <div className="aspect-[3/4] overflow-hidden bg-white relative mb-6 p-4 border border-border/5">
+            <div className="aspect-[3/4] overflow-hidden bg-white relative mb-5 p-4 border border-border/5 group-hover:border-accent/20 transition-all duration-500">
                 <Image
                     src={perfume.mainImage}
                     alt={perfume.name}
                     fill
-                    className="object-contain transition-transform duration-700 group-hover:scale-105 px-4 py-6"
+                    className="object-contain transition-all duration-1000 group-hover:scale-110 px-4 py-8"
                 />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
+                
+                {/* Overlay on hover */}
+                <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-background/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 flex items-end justify-center pb-6">
+                    <span className="text-[9px] uppercase tracking-[0.4em] text-accent backdrop-blur-sm px-4 py-1.5 border border-accent/20">
+                        Ver Detalle
+                    </span>
+                </div>
 
                 {/* Gender Tag */}
-                <span className="absolute top-4 left-4 bg-background/80 backdrop-blur-sm px-2 py-1 text-[8px] uppercase tracking-widest">
-                    {perfume.gender === 'Male' ? 'Hombre' : perfume.gender === 'Female' ? 'Mujer' : perfume.gender}
-                </span>
+                <div className="absolute top-4 left-4 flex flex-col gap-1">
+                    <span className="bg-background/90 backdrop-blur-sm border border-border/10 px-2 py-1 text-[8px] uppercase tracking-[0.2em] font-medium text-foreground/80">
+                        {perfume.gender === 'Male' ? 'Hombre' : perfume.gender === 'Female' ? 'Mujer' : 'Unisex'}
+                    </span>
+                    <span className="bg-accent/10 backdrop-blur-sm border border-accent/20 px-2 py-0.5 text-[7px] uppercase tracking-[0.3em] font-bold text-accent">
+                        {perfume.category}
+                    </span>
+                </div>
 
                 {/* Wishlist Button */}
                 <button 
                     onClick={handleWishlist}
-                    className="absolute top-4 right-4 p-2 rounded-full bg-white/50 backdrop-blur-sm hover:bg-white transition-colors z-10"
+                    className="absolute top-4 right-4 p-2.5 rounded-full bg-white/40 backdrop-blur-md border border-white/20 hover:bg-white hover:border-white transition-all duration-300 z-10 group/wish"
                 >
                     <Heart 
-                        size={16} 
-                        className={isWished ? "fill-red-500 text-red-500" : "text-foreground"} 
+                        size={15} 
+                        className={`transition-all duration-300 ${isWished ? "fill-rose-500 text-rose-500" : "text-muted group-hover/wish:text-accent"}`} 
                     />
                 </button>
             </div>
 
-            <div className="flex flex-col gap-1 text-center sm:text-left px-1">
-                <span className="text-[10px] uppercase tracking-widest text-[#D4AF37]/80 block">{perfume.brand}</span>
-                <h3 className="text-base font-serif text-foreground group-hover:text-[#D4AF37] transition-colors">{perfume.name}</h3>
-                <div className="flex items-center justify-between pt-1">
-                    <p className="text-xs text-muted font-sans">
-                        Precio <span className="text-foreground font-medium">{formatPrice(minPrice)}</span>
+            <div className="flex flex-col gap-1.5 text-center px-1">
+                <span className="text-[10px] uppercase tracking-[0.3em] text-accent/70 font-sans">{perfume.brand}</span>
+                <h3 className="text-sm md:text-md font-serif text-foreground group-hover:text-accent transition-colors duration-300 lines-clamp-1">{perfume.name}</h3>
+                <div className="flex items-center justify-center pt-2 gap-4">
+                    <div className="h-[1px] w-4 bg-border/40 group-hover:w-8 transition-all" />
+                    <p className="text-xs text-muted font-sans tracking-widest uppercase">
+                        Desde <span className="text-foreground font-medium ml-1">{formatPrice(minPrice)}</span>
                     </p>
-                    <ArrowRight size={14} className="text-[#D4AF37] opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-500" />
+                    <div className="h-[1px] w-4 bg-border/40 group-hover:w-8 transition-all" />
                 </div>
             </div>
         </Link>

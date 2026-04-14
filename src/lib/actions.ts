@@ -63,7 +63,11 @@ export async function createOrder(data: {
 
         // Enviar notificación por Correo Electrónico usando Resend
         try {
-            const adminEmail = process.env.ADMIN_EMAIL || 'admin@perfumeria.com';
+            // Obtener el correo configurado desde la base de datos
+            const settingsRes = await getStoreSettings();
+            const adminEmail = settingsRes.success && settingsRes.settings 
+                ? settingsRes.settings.notificationEmail 
+                : (process.env.ADMIN_EMAIL || 'admin@perfumeria.com');
             
             if (resend) {
                 // Recuperamos la orden con los nombres de los productos
@@ -219,6 +223,37 @@ export async function updateProduct(id: string, data: {
         return { success: true };
     } catch (error) {
         console.error("Failed to update product:", error);
+        return { success: false };
+    }
+}
+
+export async function updateProductImages(id: string, mainImage: string, images: string) {
+    try {
+        await prisma.perfume.update({
+            where: { id },
+            data: { mainImage, images }
+        });
+        revalidatePath("/admin");
+        revalidatePath("/catalogo");
+        revalidatePath(`/producto/${id}`);
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to update product images:", error);
+        return { success: false };
+    }
+}
+
+export async function updateCarouselImageUrl(id: string, imageUrl: string) {
+    try {
+        await prisma.homeCarousel.update({
+            where: { id },
+            data: { imageUrl }
+        });
+        revalidatePath("/");
+        revalidatePath("/admin");
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to update carousel image URL:", error);
         return { success: false };
     }
 }
@@ -410,5 +445,65 @@ export async function deleteCarouselImage(id: string) {
         return { success: true };
     } catch (error) {
         return { success: false };
+    }
+}
+
+export async function getDatabaseHealth() {
+    try {
+        // Query raw para obtener el tamaño de la base de datos en PostgreSQL
+        const result: any[] = await prisma.$queryRaw`SELECT pg_size_pretty(pg_database_size(current_database())) as size`;
+        const size = result[0]?.size || "N/A";
+        
+        const productsCount = await prisma.perfume.count();
+        const ordersCount = await prisma.order.count();
+        
+        return {
+            success: true,
+            size,
+            productsCount,
+            ordersCount,
+            platform: 'Supabase'
+        };
+    } catch (error) {
+        console.error("Error al obtener salud de DB:", error);
+        return { success: false, error: "Error de conexión" };
+    }
+}
+
+export async function getStoreSettings() {
+    try {
+        let settings = await prisma.storeSettings.findUnique({
+            where: { id: 'default' }
+        });
+
+        if (!settings) {
+            settings = await prisma.storeSettings.create({
+                data: {
+                    id: 'default',
+                    notificationEmail: process.env.ADMIN_EMAIL || 'admin@perfumeria.com',
+                    whatsappNumber: '573216743586'
+                }
+            });
+        }
+
+        return { success: true, settings };
+    } catch (error) {
+        console.error("Error al obtener ajustes:", error);
+        return { success: false, error: "Error de conexión" };
+    }
+}
+
+export async function updateStoreSettings(data: { notificationEmail: string, whatsappNumber: string }) {
+    try {
+        await prisma.storeSettings.update({
+            where: { id: 'default' },
+            data
+        });
+        revalidatePath("/admin");
+        revalidatePath("/checkout");
+        return { success: true };
+    } catch (error) {
+        console.error("Error al actualizar ajustes:", error);
+        return { success: false, error: "Error de servidor" };
     }
 }

@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { useCart } from '@/context/CartContext';
-import { createOrder } from '@/lib/actions';
+import { createOrder, getStoreSettings } from '@/lib/actions';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, ChevronLeft } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, Landmark, Smartphone, CreditCard, Truck } from 'lucide-react';
 import Link from 'next/link';
 import { formatPrice } from '@/lib/formatters';
 
@@ -55,8 +55,12 @@ export default function CheckoutPage() {
         });
 
         if (result.success) {
-            // Configura aquí tu número de WhatsApp
-            const phoneNumber = "573216743585"; 
+            // Obtener el número de WhatsApp configurado dinámicamente
+            const settingsRes = await getStoreSettings();
+            const phoneNumber = settingsRes.success && settingsRes.settings 
+                ? settingsRes.settings.whatsappNumber 
+                : "573216743586";
+
             const message = `¡Hola! Acabo de registrar un nuevo pedido en la tienda.
 
 *Detalles del Cliente:*
@@ -158,10 +162,31 @@ Por favor confírmame el pedido para coordinar el pago. ¡Gracias!`;
                             <span className="text-2xl font-serif">{formatPrice(getTotalPrice())}</span>
                         </div>
 
-                        <p className="mt-8 text-[10px] text-muted leading-relaxed font-sans text-center">
-                            Al confirmar el pedido, aceptas nuestras condiciones de venta y política de privacidad.
-                            El pago se realizará contra reembolso o transferencia bancaria según disponibilidad.
-                        </p>
+                        <div className="mt-10 border-t border-border pt-8">
+                            <h3 className="text-[10px] uppercase tracking-[0.3em] text-accent mb-6 text-center">Medios de Pago Aceptados</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-background/50 border border-border/30 p-4 flex flex-col items-center justify-center text-center gap-2 group hover:border-accent/40 transition-colors duration-300">
+                                    <Landmark size={20} className="text-muted group-hover:text-accent transition-colors duration-300" strokeWidth={1.5} />
+                                    <span className="text-[9px] uppercase tracking-widest font-medium">Bancolombia</span>
+                                </div>
+                                <div className="bg-background/50 border border-border/30 p-4 flex flex-col items-center justify-center text-center gap-2 group hover:border-[#ED1C24]/50 transition-colors duration-300">
+                                    <Smartphone size={20} className="text-muted group-hover:text-[#ED1C24] transition-colors duration-300" strokeWidth={1.5} />
+                                    <span className="text-[9px] uppercase tracking-widest font-medium">Daviplata</span>
+                                </div>
+                                <div className="bg-background/50 border border-border/30 p-4 flex flex-col items-center justify-center text-center gap-2 group hover:border-[#004481]/50 transition-colors duration-300">
+                                    <CreditCard size={20} className="text-muted group-hover:text-[#004481] transition-colors duration-300" strokeWidth={1.5} />
+                                    <span className="text-[9px] uppercase tracking-widest font-medium">BBVA</span>
+                                </div>
+                                <div className="bg-background/50 border border-border/30 p-4 flex flex-col items-center justify-center text-center gap-2 group hover:border-emerald-500/50 transition-colors duration-300 relative overflow-hidden">
+                                    <Truck size={20} className="text-muted group-hover:text-emerald-500 transition-colors duration-300" strokeWidth={1.5} />
+                                    <span className="text-[9px] uppercase tracking-widest font-medium">Contraentrega</span>
+                                    <span className="text-[7px] uppercase tracking-[0.2em] text-emerald-500 bg-emerald-500/10 px-2 py-0.5 mt-1 border border-emerald-500/20">Solo Bogotá</span>
+                                </div>
+                            </div>
+                            <p className="mt-6 text-[9px] text-muted leading-relaxed font-sans text-center">
+                                El pago se coordinará de forma segura vía WhatsApp una vez confirmado tu pedido. Al confirmar, aceptas nuestras condiciones de venta y política de privacidad.
+                            </p>
+                        </div>
                     </aside>
                 </div>
             </main>

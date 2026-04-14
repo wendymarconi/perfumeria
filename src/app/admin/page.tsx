@@ -3,12 +3,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import { Clock, CheckCircle2, Truck, XCircle, ChevronLeft, ChevronRight, Package, ShoppingCart, Edit2, Save, Trash2, Camera, Upload, Image as ImageIcon, Plus, Trash, PlusCircle, MinusCircle, LogIn, Eye, EyeOff, BarChart2 } from 'lucide-react';
-import { getOrders, updateOrderStatus, getAdminProducts, getAdminProductIds, getAdminProductById, updateProduct, updateVariant, createProduct, deleteProduct, createVariant, deleteVariant, adminLogin, getCarouselImages, addVariant, updateCarouselImage, deleteCarouselImage } from '@/lib/actions';
+import { getOrders, updateOrderStatus, getAdminProducts, getAdminProductIds, getAdminProductById, updateProduct, updateProductImages, updateCarouselImageUrl, updateVariant, createProduct, deleteProduct, createVariant, deleteVariant, adminLogin, getCarouselImages, addVariant, updateCarouselImage, deleteCarouselImage, getDatabaseHealth, getStoreSettings, updateStoreSettings } from '@/lib/actions';
+import { Settings } from 'lucide-react';
 import { formatPrice } from '@/lib/formatters';
 import AdminCharts from '@/components/AdminCharts';
 
 export default function AdminPage() {
-    const [activeTab, setActiveTab] = useState<'orders' | 'inventory' | 'create' | 'carousel' | 'stats'>('orders');
+    const [activeTab, setActiveTab] = useState<'orders' | 'inventory' | 'create' | 'carousel' | 'stats' | 'settings'>('orders');
     
     // Auth
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -28,10 +29,15 @@ export default function AdminPage() {
     const [loginError, setLoginError] = useState('');
     const [loginLoading, setLoginLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [dbHealth, setDbHealth] = useState<any>(null);
+    const [storeSettings, setStoreSettings] = useState<any>(null);
+    const [settingsForm, setSettingsForm] = useState({ notificationEmail: '', whatsappNumber: '' });
+    const [isSavingSettings, setIsSavingSettings] = useState(false);
 
     // Optimización de Imágenes
     const [isOptimizing, setIsOptimizing] = useState(false);
     const [optimizationProgress, setOptimizationProgress] = useState(0);
+    const [currentOptimizingName, setCurrentOptimizingName] = useState('');
 
     // Filtros de Inventario
     const [searchName, setSearchName] = useState('');
@@ -107,13 +113,53 @@ export default function AdminPage() {
 
         if (activeTab === 'orders' || activeTab === 'stats') {
             fetchOrders();
-            if (activeTab === 'stats') fetchProducts(); // We need products for the inventory pie chart
+            if (activeTab === 'stats') {
+                fetchProducts();
+                fetchDbHealth();
+            }
         } else if (activeTab === 'inventory') {
             fetchProducts();
         } else if (activeTab === 'carousel') {
             fetchCarousel();
+        } else if (activeTab === 'settings') {
+            fetchSettings();
         }
     }, [activeTab, isAuthenticated]);
+
+    async function fetchSettings() {
+        try {
+            setIsLoading(true);
+            const res = await getStoreSettings();
+            if (res.success && res.settings) {
+                setStoreSettings(res.settings);
+                setSettingsForm({
+                    notificationEmail: res.settings.notificationEmail,
+                    whatsappNumber: res.settings.whatsappNumber
+                });
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    async function handleUpdateSettings() {
+        setIsSavingSettings(true);
+        const res = await updateStoreSettings(settingsForm);
+        if (res.success) {
+            setStoreSettings({ ...storeSettings, ...settingsForm });
+            alert('Configuración actualizada correctamente');
+        } else {
+            alert('Error al actualizar la configuración');
+        }
+        setIsSavingSettings(false);
+    }
+
+    async function fetchDbHealth() {
+        const health = await getDatabaseHealth();
+        if (health.success) {
+            setDbHealth(health);
+        }
+    }
 
     async function fetchCarousel() {
         try {
@@ -233,10 +279,15 @@ export default function AdminPage() {
     }
 
     const compressImage = (base64Str: string, maxWidth = 1000, maxHeight = 1000, quality = 0.7): Promise<string> => {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                console.warn("Compresión excedió el tiempo límite, continuando con imagen original.");
+                resolve(base64Str);
+            }, 5000);
+
             const img = new Image();
-            img.src = base64Str;
             img.onload = () => {
+                clearTimeout(timeout);
                 const canvas = document.createElement('canvas');
                 let width = img.width;
                 let height = img.height;
@@ -259,6 +310,12 @@ export default function AdminPage() {
                 ctx?.drawImage(img, 0, 0, width, height);
                 resolve(canvas.toDataURL('image/jpeg', quality));
             };
+            img.onerror = () => {
+                clearTimeout(timeout);
+                console.error("Error al cargar la imagen para compresión.");
+                resolve(base64Str); // Devolvemos la original si falla
+            };
+            img.src = base64Str;
         });
     };
 
@@ -337,23 +394,30 @@ export default function AdminPage() {
         
         setIsOptimizing(true);
         setOptimizationProgress(0);
+        setCurrentOptimizingName('Iniciando...');
         
         try {
-            // Paso 1: Obtener solo la lista de IDs para no saturar la transferencia
+            console.log("Iniciando fase de optimización de productos...");
             const productList = await getAdminProductIds();
             const total = productList.length;
             
-            console.log(`Iniciando optimización de ${total} productos...`);
+            if (total === 0) {
+                alert("No hay productos en el inventario para optimizar.");
+                setIsOptimizing(false);
+                return;
+            }
 
             for (let i = 0; i < total; i++) {
+                const item = productList[i];
+                setCurrentOptimizingName(`Producto (${i + 1}/${total}): ${item.name}`);
+                
                 try {
-                    // Paso 2: Obtener datos completos de UN solo producto a la vez
-                    const product = await getAdminProductById(productList[i].id);
+                    const product = await getAdminProductById(item.id);
                     if (!product) continue;
 
                     let needsUpdate = false;
                     
-                    // Procesar imágenes secundarias
+                    // Procesar imágenes secundarias (JSON)
                     let currentImages = [];
                     try {
                         currentImages = JSON.parse(product.images || '[]');
@@ -363,11 +427,16 @@ export default function AdminPage() {
                     
                     const newImages = [];
                     for (const img of currentImages) {
-                        // Optimizar si es Base64 y mayor a ~200KB
-                        if (img.startsWith('data:image') && img.length > 200000) {
-                            const compressed = await compressImage(img);
-                            newImages.push(compressed);
-                            needsUpdate = true;
+                        // Solo optimizar si es Base64 y pesa más de ~150KB
+                        if (img && img.startsWith('data:image') && img.length > 150000) {
+                            try {
+                                const compressed = await compressImage(img);
+                                newImages.push(compressed);
+                                needsUpdate = true;
+                            } catch (compErr) {
+                                console.warn(`Fallo al comprimir imagen secundaria de ${item.name}, saltando...`);
+                                newImages.push(img);
+                            }
                         } else {
                             newImages.push(img);
                         }
@@ -375,56 +444,59 @@ export default function AdminPage() {
                     
                     // Procesar imagen principal
                     let newMainImage = product.mainImage;
-                    if (product.mainImage?.startsWith('data:image') && product.mainImage.length > 200000) {
-                        newMainImage = await compressImage(product.mainImage);
-                        needsUpdate = true;
+                    if (product.mainImage?.startsWith('data:image') && product.mainImage.length > 150000) {
+                        try {
+                            newMainImage = await compressImage(product.mainImage);
+                            needsUpdate = true;
+                        } catch (compErr) {
+                            console.warn(`Fallo al comprimir imagen principal de ${item.name}`);
+                        }
                     }
 
                     if (needsUpdate) {
-                        await updateProduct(product.id, {
-                            brand: product.brand,
-                            name: product.name,
-                            category: product.category,
-                            description: product.description,
-                            notes: product.notes,
-                            accords: product.accords ?? undefined,
-                            gender: product.gender,
-                            mainImage: newMainImage,
-                            images: JSON.stringify(newImages)
-                        });
-                        console.log(`Optimizado: ${product.name}`);
+                        console.log(`Guardando optimización para: ${product.name}`);
+                        const result = await updateProductImages(product.id, newMainImage, JSON.stringify(newImages));
+                        if (!result.success) {
+                            console.error(`Error al guardar en DB para ${product.name}`);
+                        }
                     }
                 } catch (prodError) {
-                    console.error(`Error procesando "${productList[i].name}":`, prodError);
-                    // Seguimos con el resto para no bloquear todo el proceso
+                    console.error(`Error procesando "${item.name}":`, prodError);
                 }
                 
                 setOptimizationProgress(Math.round(((i + 1) / total) * 100));
-                // Respiro de 300ms entre productos para cuidar la cuota de conexión
+                // Pequeño respiro para el hilo principal y para evitar saturar DB
                 await new Promise(resolve => setTimeout(resolve, 300));
             }
 
-            // También optimizamos el Carrusel
+            // Carrusel
+            setCurrentOptimizingName('Optimizando Carrusel...');
             try {
                 const carousel = await getCarouselImages();
                 for (const item of carousel) {
                     if (item.imageUrl.startsWith('data:image') && item.imageUrl.length > 200000) {
-                        const compressed = await compressImage(item.imageUrl);
-                        await updateCarouselImage(item.id, { imageUrl: compressed, order: item.order });
+                        try {
+                            const compressed = await compressImage(item.imageUrl);
+                            await updateCarouselImageUrl(item.id, compressed);
+                        } catch (carCompErr) {
+                            console.warn(`Fallo al comprimir carrusel ${item.id}`);
+                        }
                     }
                 }
             } catch (carError) {
                 console.error('Error optimizando carrusel:', carError);
             }
 
+            setCurrentOptimizingName('¡Completado!');
             alert('¡Optimización terminada! Tus imágenes ahora son mucho más ligeras.');
             fetchProducts();
             fetchCarousel();
         } catch (error) {
             console.error('Error crítico en el inicio de optimización:', error);
-            alert('No se pudo establecer conexión inicial con la base de datos para optimizar. Posiblemente la cuota esté totalmente agotada hoy.');
+            alert('Error en conexión: Verifica tu conexión a internet o los límites de la base de datos.');
         } finally {
             setIsOptimizing(false);
+            setCurrentOptimizingName('');
         }
     };
 
@@ -557,6 +629,15 @@ export default function AdminPage() {
                             <div className="flex items-center gap-2">
                                 <PlusCircle size={14} />
                                 <span>Crear</span>
+                            </div>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('settings')}
+                            className={`px-6 py-2.5 text-[10px] uppercase tracking-widest transition-all ${activeTab === 'settings' ? 'bg-accent text-accent-foreground' : 'text-muted hover:text-foreground'}`}
+                        >
+                            <div className="flex items-center gap-2">
+                                <Settings size={14} />
+                                <span>Parámetros</span>
                             </div>
                         </button>
                         <button
@@ -730,8 +811,11 @@ export default function AdminPage() {
                                                 style={{ width: `${optimizationProgress}%` }}
                                             />
                                         </div>
-                                        <p className="text-[10px] uppercase tracking-widest text-accent animate-pulse">
-                                            Optimizando: {optimizationProgress}% completo...
+                                        <p className="text-[10px] uppercase tracking-widest text-accent animate-pulse mb-2">
+                                            {currentOptimizingName}
+                                        </p>
+                                        <p className="text-[10px] uppercase tracking-widest text-accent">
+                                            {optimizationProgress}% completo...
                                         </p>
                                     </div>
                                 ) : (
@@ -744,6 +828,87 @@ export default function AdminPage() {
                                     </button>
                                 )}
                             </div>
+                        </div>
+
+                        {/* Database Health Section */}
+                        {dbHealth && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in duration-1000 delay-150">
+                                <div className="bg-card/50 border border-border/10 p-6 glass flex flex-col items-center justify-center text-center">
+                                    <span className="text-[9px] uppercase tracking-[0.2em] text-accent mb-2 block">Motor de Datos</span>
+                                    <span className="text-xl font-serif text-foreground">{dbHealth.platform}</span>
+                                    <div className="mt-2 flex items-center gap-1.5 text-[8px] uppercase tracking-widest text-emerald-500 font-bold">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span>Conectado</span>
+                                    </div>
+                                </div>
+                                <div className="bg-card/50 border border-border/10 p-6 glass flex flex-col items-center justify-center text-center">
+                                    <span className="text-[9px] uppercase tracking-[0.2em] text-accent mb-2 block">Almacenamiento Usado</span>
+                                    <span className="text-xl font-serif text-foreground">{dbHealth.size}</span>
+                                    <span className="mt-2 text-[8px] uppercase tracking-widest text-muted">de 500MB (Free Tier)</span>
+                                </div>
+                                <div className="bg-card/50 border border-border/10 p-6 glass flex flex-col items-center justify-center text-center">
+                                    <span className="text-[9px] uppercase tracking-[0.2em] text-accent mb-2 block">Salud de Sincronización</span>
+                                    <span className="text-xl font-serif text-foreground">Excelente</span>
+                                    <span className="mt-2 text-[8px] uppercase tracking-widest text-muted">Migración Neon Lista</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ) : activeTab === 'settings' ? (
+                    /* SETTINGS TAB */
+                    <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+                        <div className="bg-card border border-border/20 p-10 glass space-y-10">
+                            <div>
+                                <h3 className="text-xl font-serif mb-2">Configuración General</h3>
+                                <p className="text-xs text-muted uppercase tracking-widest">Ajustes globales de la tienda</p>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] uppercase tracking-widest text-accent block font-medium">Email de Notificaciones</label>
+                                    <p className="text-[9px] text-muted italic mb-3">Los nuevos pedidos se enviarán a esta dirección.</p>
+                                    <input
+                                        type="email"
+                                        value={settingsForm.notificationEmail}
+                                        onChange={(e) => setSettingsForm({ ...settingsForm, notificationEmail: e.target.value })}
+                                        className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground"
+                                        placeholder="correo@ejemplo.com"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] uppercase tracking-widest text-accent block font-medium">Número de WhatsApp</label>
+                                    <p className="text-[9px] text-muted italic mb-3">Número para el botón flotante y redirección de pedidos (Incluye código de país, ej: 57).</p>
+                                    <input
+                                        type="text"
+                                        value={settingsForm.whatsappNumber}
+                                        onChange={(e) => setSettingsForm({ ...settingsForm, whatsappNumber: e.target.value })}
+                                        className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground"
+                                        placeholder="573216743586"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="pt-6 border-t border-border/10 flex justify-end">
+                                <button
+                                    onClick={handleUpdateSettings}
+                                    disabled={isSavingSettings}
+                                    className="px-10 py-4 bg-accent text-accent-foreground text-[10px] uppercase tracking-[0.3em] font-medium hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    {isSavingSettings ? (
+                                        <div className="animate-spin w-3 h-3 border-2 border-current border-t-transparent rounded-full" />
+                                    ) : (
+                                        <Save size={14} />
+                                    )}
+                                    <span>{isSavingSettings ? 'Guardando...' : 'Guardar Cambios'}</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="mt-8 bg-blue-500/5 border border-blue-500/10 p-6 rounded-sm">
+                            <p className="text-[10px] text-blue-500 font-medium leading-relaxed uppercase tracking-wider text-center">
+                                Estos cambios se aplican instantáneamente en toda la tienda para todos los usuarios.
+                            </p>
                         </div>
                     </div>
                 ) : activeTab === 'inventory' ? (

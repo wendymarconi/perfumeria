@@ -1,9 +1,22 @@
-import React from 'react';
+"use client";
+
+import React, { useEffect, useState } from 'react';
+import { getStoreSettings } from '@/lib/actions';
 
 const WhatsAppButton = () => {
-  // Configura aquí tu número de WhatsApp y mensaje predeterminado
-  const phoneNumber = "573216743585"; // Número real de la empresa
+  const [phoneNumber, setPhoneNumber] = useState("573216743586"); // Default/Fallback
   const message = "Hola, me gustaría obtener más información sobre sus perfumes.";
+  
+  useEffect(() => {
+    async function loadSettings() {
+      const res = await getStoreSettings();
+      if (res.success && res.settings) {
+        setPhoneNumber(res.settings.whatsappNumber);
+      }
+    }
+    loadSettings();
+  }, []);
+
   const waLink = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 
   return (

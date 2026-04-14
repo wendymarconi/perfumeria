@@ -21,11 +21,13 @@ export default async function Home() {
           }
         }
       }
-    });
+    }) || [];
 
-    carouselImages = await getCarouselImages();
+    carouselImages = await getCarouselImages() || [];
   } catch (error) {
-    console.error("Error al cargar datos de inicio (posible cuota excedida):", error);
+    console.error("Error al cargar datos de inicio (posiblemente DB no accesible durante build):", error);
+    featuredPerfumes = [];
+    carouselImages = [];
   }
 
   return (
