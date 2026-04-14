@@ -495,15 +495,19 @@ export async function getStoreSettings() {
 
 export async function updateStoreSettings(data: { notificationEmail: string, whatsappNumber: string }) {
     try {
-        await prisma.storeSettings.update({
+        await prisma.storeSettings.upsert({
             where: { id: 'default' },
-            data
+            update: data,
+            create: {
+                id: 'default',
+                ...data
+            }
         });
         revalidatePath("/admin");
         revalidatePath("/checkout");
         return { success: true };
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error al actualizar ajustes:", error);
-        return { success: false, error: "Error de servidor" };
+        return { success: false, error: error?.message || "Error al actualizar la base de datos" };
     }
 }

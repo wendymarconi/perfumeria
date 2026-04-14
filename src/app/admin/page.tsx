@@ -149,7 +149,7 @@ export default function AdminPage() {
             setStoreSettings({ ...storeSettings, ...settingsForm });
             alert('Configuración actualizada correctamente');
         } else {
-            alert('Error al actualizar la configuración');
+            alert('Error al actualizar la configuración: ' + (res.error || 'Error desconocido'));
         }
         setIsSavingSettings(false);
     }
