@@ -381,9 +381,9 @@ export async function createProduct(data: {
         revalidatePath("/admin");
         revalidatePath("/catalogo");
         return { success: true };
-    } catch (error) {
+    } catch (error: any) {
         console.error("Failed to create product:", error);
-        return { success: false };
+        return { success: false, error: error?.message || "Error desconocido al guardar en la base de datos." };
     }
 }
 

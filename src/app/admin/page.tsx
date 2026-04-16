@@ -259,21 +259,46 @@ export default function AdminPage() {
     }
 
     async function handleCreateProduct() {
-        if (!newProductData.mainImage) {
-            alert('Por favor, selecciona una imagen o introduce una URL.');
+        if (!newProductData.brand || !newProductData.brand.trim()) {
+            alert('Por favor, ingresa la marca del perfume.');
             return;
         }
+        if (!newProductData.name || !newProductData.name.trim()) {
+            alert('Por favor, ingresa el nombre del perfume.');
+            return;
+        }
+        if (!newProductData.description || !newProductData.description.trim()) {
+            alert('Por favor, ingresa la descripción del perfume.');
+            return;
+        }
+        if (!newProductData.mainImage) {
+            alert('Por favor, selecciona una imagen principal (adjunta un archivo o introduce una URL).');
+            return;
+        }
+        if (newProductData.variants.length === 0) {
+            alert('Debes agregar al menos una medida/variante.');
+            return;
+        }
+        
         setIsLoading(true);
-        const result = await createProduct(newProductData);
-        if (result.success) {
-            setActiveTab('inventory');
-            setNewProductData({
-                brand: '', name: '', category: 'Nicho', description: '', notes: '', mainImage: '', gender: 'Unisex',
-                images: '[]', accords: '',
-                variants: [
-                    { size: '5ml', price: 0, stock: 10 }
-                ]
-            });
+        try {
+            const result = await createProduct(newProductData);
+            if (result.success) {
+                setActiveTab('inventory');
+                setNewProductData({
+                    brand: '', name: '', category: 'Nicho', description: '', notes: '', mainImage: '', gender: 'Unisex',
+                    images: '[]', accords: '',
+                    variants: [
+                        { size: '5ml', price: 0, stock: 10 }
+                    ]
+                });
+                alert('¡Perfume guardado exitosamente!');
+            } else {
+                alert('Error al guardar el perfume:\n' + (result.error || 'Error de conexión o de la base de datos.'));
+            }
+        } catch (error: any) {
+            console.error('Error in handleCreateProduct:', error);
+            alert('Ha ocurrido un error inesperado al intentar guardar el perfume.\nDetalles: ' + (error?.message || String(error)));
         }
         setIsLoading(false);
     }
