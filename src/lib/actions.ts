@@ -32,6 +32,11 @@ export async function adminLogin(email: string, password: string) {
 export async function createOrder(data: {
     customerName: string;
     customerEmail: string;
+    phone: string;
+    address: string;
+    city: string;
+    receiverName: string;
+    notes?: string;
     items: {
         variantId: string;
         quantity: number;
@@ -44,6 +49,11 @@ export async function createOrder(data: {
             data: {
                 customerName: data.customerName,
                 customerEmail: data.customerEmail,
+                phone: data.phone,
+                address: data.address,
+                city: data.city,
+                receiverName: data.receiverName,
+                notes: data.notes || "",
                 total: data.total,
                 status: "PENDING",
                 items: {
@@ -86,29 +96,64 @@ export async function createOrder(data: {
                 
                 if (orderWithItems) {
                     let htmlMessage = `
-                        <h2>🛒 ¡NUEVO PEDIDO RECIBIDO!</h2>
-                        <hr />
-                        <p><strong>👤 Cliente:</strong> ${data.customerName}</p>
-                        <p><strong>📧 Email:</strong> ${data.customerEmail}</p>
-                        <h3>🛍️ Productos:</h3>
-                        <ul>
+                        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px;">
+                        <h2 style="color: #000; border-bottom: 2px solid #000; padding-bottom: 10px;">🛒 ¡NUEVO PEDIDO RECIBIDO!</h2>
+                        
+                        <div style="background: #f9f9f9; padding: 15px; margin-bottom: 20px;">
+                            <h3 style="margin-top: 0; font-size: 14px; text-transform: uppercase; color: #666;">👤 Información del Cliente</h3>
+                            <p style="margin: 5px 0;"><strong>Nombre:</strong> ${data.customerName}</p>
+                            <p style="margin: 5px 0;"><strong>Email:</strong> ${data.customerEmail}</p>
+                            <p style="margin: 5px 0;"><strong>Celular:</strong> ${data.phone}</p>
+                        </div>
+
+                        <div style="background: #f9f9f9; padding: 15px; margin-bottom: 20px; border-left: 4px solid #000;">
+                            <h3 style="margin-top: 0; font-size: 14px; text-transform: uppercase; color: #666;">🚚 Detalles de Envío</h3>
+                            <p style="margin: 5px 0;"><strong>Dirección:</strong> ${data.address}</p>
+                            <p style="margin: 5px 0;"><strong>Ciudad:</strong> ${data.city}</p>
+                            <p style="margin: 5px 0;"><strong>Recibe:</strong> ${data.receiverName}</p>
+                            ${data.notes ? `<p style="margin: 5px 0;"><strong>Observaciones:</strong> ${data.notes}</p>` : ''}
+                        </div>
+
+                        <h3 style="font-size: 14px; text-transform: uppercase; color: #666;">🛍️ Productos</h3>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #eee;">
+                                    <th style="text-align: left; padding: 8px;">Producto</th>
+                                    <th style="text-align: center; padding: 8px;">Cant.</th>
+                                    <th style="text-align: right; padding: 8px;">Precio</th>
+                                </tr>
+                            </thead>
+                            <tbody>
                     `;
                     
                     orderWithItems.items.forEach(item => {
-                        htmlMessage += `<li>${item.quantity}x ${item.variant.perfume.name} (${item.variant.size}) - $${Number(item.quantity) * Number(item.price)}</li>`;
+                        htmlMessage += `
+                            <tr>
+                                <td style="padding: 10px 8px; border-bottom: 1px solid #eee;">${item.variant.perfume.name} (${item.variant.size})</td>
+                                <td style="text-align: center; padding: 10px 8px; border-bottom: 1px solid #eee;">${item.quantity}</td>
+                                <td style="text-align: right; padding: 10px 8px; border-bottom: 1px solid #eee;">$${(item.quantity * item.price).toLocaleString()}</td>
+                            </tr>
+                        `;
                     });
                     
                     htmlMessage += `
-                        </ul>
-                        <br />
-                        <h3>💰 TOTAL: $${data.total}</h3>
-                        <p><small>Este pedido está ahora pendiente en tu panel de administrador.</small></p>
+                            </tbody>
+                        </table>
+                        
+                        <div style="text-align: right; margin-top: 20px;">
+                            <h2 style="margin: 0;">TOTAL: $${data.total.toLocaleString()}</h2>
+                        </div>
+                        
+                        <p style="margin-top: 30px; font-size: 12px; color: #888; text-align: center; border-top: 1px solid #eee; pt: 20px;">
+                            Este pedido está ahora pendiente en tu panel de administrador.
+                        </p>
+                        </div>
                     `;
 
                     await resend.emails.send({
                         from: 'Soporte Perfumeria <onboarding@resend.dev>',
                         to: [adminEmail],
-                        subject: `Nuevo pedido de ${data.customerName} - $${data.total}`,
+                        subject: `Nuevo pedido de ${data.customerName} - $${data.total.toLocaleString()}`,
                         html: htmlMessage
                     });
                 }

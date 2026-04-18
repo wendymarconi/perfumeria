@@ -4,6 +4,7 @@ import ProductCard from "@/components/ProductCard";
 import { prisma } from "@/lib/prisma";
 import { getCarouselImages } from "@/lib/actions";
 import FadeIn from "@/components/FadeIn";
+import Footer from "@/components/Footer";
 
 export const dynamic = 'force-dynamic';
 
@@ -75,11 +76,7 @@ export default async function Home() {
         </FadeIn>
       </main>
 
-      <footer className="border-t border-border py-12 text-center">
-        <p className="text-xs uppercase tracking-[0.2em] opacity-50 font-sans">
-          &copy; {new Date().getFullYear()} Paradiso Universo Fragántico. Todos los derechos reservados.
-        </p>
-      </footer>
+      <Footer />
     </div>
   );
 }

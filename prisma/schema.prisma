@@ -37,6 +37,11 @@ model Order {
   id            String               @id @default(cuid())
   customerName  String
   customerEmail String
+  phone         String?
+  address       String?
+  city          String?
+  receiverName  String?
+  notes         String?
   total         Float
   status        String               @default("PENDING") // PENDING, SHIPPED, DELIVERED, CANCELLED
   createdAt     DateTime             @default(now())

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import Navbar from '@/components/Navbar';
-import { Clock, CheckCircle2, Truck, XCircle, ChevronLeft, ChevronRight, Package, ShoppingCart, Edit2, Save, Trash2, Camera, Upload, Image as ImageIcon, Plus, Trash, PlusCircle, MinusCircle, LogIn, Eye, EyeOff, BarChart2 } from 'lucide-react';
+import { Clock, CheckCircle2, Truck, XCircle, ChevronLeft, ChevronRight, Package, ShoppingCart, Edit2, Save, Trash2, Camera, Upload, Image as ImageIcon, Plus, Trash, PlusCircle, MinusCircle, LogIn, Eye, EyeOff, BarChart2, Smartphone } from 'lucide-react';
 import { getOrders, updateOrderStatus, getAdminProducts, getAdminProductIds, getAdminProductById, updateProduct, updateProductImages, updateCarouselImageUrl, updateVariant, createProduct, deleteProduct, createVariant, deleteVariant, adminLogin, getCarouselImages, addVariant, updateCarouselImage, deleteCarouselImage, getDatabaseHealth, getStoreSettings, updateStoreSettings } from '@/lib/actions';
 import { Settings } from 'lucide-react';
 import { formatPrice } from '@/lib/formatters';
@@ -737,7 +737,7 @@ export default function AdminPage() {
                             }).map((order) => (
                                 <div key={order.id} className="bg-card border border-border/20 overflow-hidden hover:border-accent/40 transition-all duration-500 group">
                                     <div className="p-8 flex flex-col lg:flex-row lg:items-center gap-8 lg:gap-12">
-                                        <div className="lg:w-48">
+                                        <div className="lg:w-40">
                                             <span className="text-[10px] uppercase tracking-widest text-accent/70 block mb-1">Referencia</span>
                                             <span className="text-sm font-sans font-medium block mb-3 text-foreground">#{order.id.slice(-6).toUpperCase()}</span>
                                             <span className="text-[10px] text-muted block uppercase tracking-widest">
@@ -745,20 +745,56 @@ export default function AdminPage() {
                                             </span>
                                         </div>
 
-                                        <div className="lg:flex-grow">
-                                            <span className="text-[10px] uppercase tracking-widest text-accent/70 block mb-1">Cliente</span>
-                                            <span className="text-sm font-serif block text-lg mb-1 text-foreground">{order.customerName}</span>
-                                            <span className="text-[10px] font-sans text-muted uppercase tracking-widest">{order.customerEmail}</span>
+                                        <div className="lg:flex-grow grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <span className="text-[10px] uppercase tracking-widest text-accent/70 block mb-1">Cliente</span>
+                                                <span className="text-sm font-serif block text-lg mb-1 text-foreground">{order.customerName}</span>
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-[10px] font-sans text-muted uppercase tracking-widest">{order.customerEmail}</span>
+                                                    {order.phone && (
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <span className="text-[10px] font-sans font-bold text-foreground">{order.phone}</span>
+                                                            <a 
+                                                                href={`https://wa.me/${order.phone.replace(/\D/g, '')}`} 
+                                                                target="_blank" 
+                                                                className="text-emerald-500 hover:text-emerald-600 transition-colors"
+                                                            >
+                                                                <Smartphone size={12} />
+                                                            </a>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="border-l border-border/10 pl-6 hidden md:block">
+                                                <span className="text-[10px] uppercase tracking-widest text-accent/70 block mb-1">Envío</span>
+                                                <p className="text-xs text-foreground font-medium mb-1">
+                                                    {order.address}, {order.city}
+                                                </p>
+                                                <p className="text-[10px] text-muted uppercase tracking-widest">
+                                                    Recibe: <span className="text-foreground/80 font-bold">{order.receiverName || order.customerName}</span>
+                                                </p>
+                                                {order.notes && (
+                                                    <p className="text-[10px] text-amber-500/80 italic mt-2 border-t border-amber-500/10 pt-1">
+                                                        "{order.notes}"
+                                                    </p>
+                                                )}
+                                            </div>
+                                            {/* Mobile Shipping View */}
+                                            <div className="md:hidden">
+                                                <span className="text-[10px] uppercase tracking-widest text-accent/70 block mb-1">Dirección</span>
+                                                <p className="text-xs text-foreground">{order.address}, {order.city}</p>
+                                            </div>
                                         </div>
 
-                                        <div className="lg:w-64">
+                                        <div className="lg:w-32">
                                             <span className="text-[10px] uppercase tracking-widest text-accent/70 block mb-1">Resumen</span>
                                             <p className="text-xs font-sans text-muted">
-                                                {order.items.length} {order.items.length === 1 ? 'producto' : 'productos'} — <span className="text-accent font-medium">{formatPrice(order.total)}</span>
+                                                {order.items.length} {order.items.length === 1 ? 'item' : 'items'} — <span className="text-accent font-medium">{formatPrice(order.total)}</span>
                                             </p>
                                         </div>
 
-                                        <div className="flex flex-col lg:items-end gap-4 min-w-[200px]">
+                                        <div className="flex flex-col lg:items-end gap-3 min-w-[180px]">
                                             <div className="flex items-center gap-2 bg-background/50 border border-border/10 px-3 py-1.5 rounded-sm">
                                                 {getStatusIcon(order.status)}
                                                 <span className="text-[10px] uppercase tracking-widest font-semibold text-foreground">
@@ -769,7 +805,7 @@ export default function AdminPage() {
                                             <select
                                                 defaultValue={order.status}
                                                 onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                                                className="w-full text-[10px] uppercase tracking-widest bg-background border border-border/30 px-3 py-2.5 text-foreground focus:outline-none focus:border-accent cursor-pointer transition-colors"
+                                                className="w-full text-[10px] uppercase tracking-widest bg-background border border-border/30 px-3 py-2 text-foreground focus:outline-none focus:border-accent cursor-pointer transition-colors"
                                             >
                                                 <option value="PENDING">Pendiente</option>
                                                 <option value="SHIPPED">Despachado</option>
@@ -792,7 +828,7 @@ export default function AdminPage() {
                                         {/* Bitácora de Estados */}
                                         {order.statusHistory && order.statusHistory.length > 0 && (
                                             <div className="mt-2 pt-4 border-t border-border/5">
-                                                <span className="text-[9px] uppercase tracking-[0.2em] text-accent/60 mb-2 block font-medium">Historial de Estados (Bitácora)</span>
+                                                <span className="text-[9px] uppercase tracking-[0.2em] text-accent/60 mb-2 block font-medium">Historial de Estados</span>
                                                 <div className="flex flex-col gap-2">
                                                     {order.statusHistory.map((history: any) => (
                                                         <div key={history.id} className="flex items-center gap-3 text-[10px] text-muted font-sans">
