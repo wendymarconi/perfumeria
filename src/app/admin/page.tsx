@@ -979,7 +979,7 @@ export default function AdminPage() {
                         {/* Search / Filter Bar */}
                         <div className="bg-card border border-border/20 p-5 glass">
                             <div className="flex justify-between items-center mb-4">
-                                <span className="text-[9px] uppercase tracking-[0.3em] text-accent font-medium">Filtrar Inventario</span>
+                                <span className="text-[9px] uppercase tracking-[0.3em] text-accent font-medium">Inventario • {products.length} Productos en Listado</span>
                                 <button
                                     onClick={() => setActiveTab('create')}
                                     className="px-4 py-1.5 bg-accent/10 border border-accent/20 text-accent text-[9px] uppercase tracking-widest hover:bg-accent hover:text-white transition-all flex items-center gap-2"
@@ -1049,17 +1049,21 @@ export default function AdminPage() {
                                     </select>
                                 </div>
                             </div>
-                            {(searchName || searchBrand || searchCategory || searchGender) && (
-                                <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/10">
-                                    <span className="text-[9px] text-muted">{filteredProducts.length} resultado(s) encontrado(s)</span>
+                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/10">
+                                <span className="text-[9px] text-muted">
+                                    {filteredProducts.length === products.length 
+                                        ? `Total de inventario: ${products.length} productos` 
+                                        : `Filtrados: ${filteredProducts.length} de ${products.length} productos`}
+                                </span>
+                                {(searchName || searchBrand || searchCategory || searchGender) && (
                                     <button
                                         onClick={() => { setSearchName(''); setSearchBrand(''); setSearchCategory(''); setSearchGender(''); }}
                                         className="text-[9px] uppercase tracking-widest text-accent hover:opacity-70 transition-opacity"
                                     >
                                         Limpiar filtros
                                     </button>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
 
                         <div className="space-y-4">
