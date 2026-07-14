@@ -1,66 +1,66 @@
 "use client";
 
 import React from 'react';
-import { Instagram, Truck } from 'lucide-react';
+import Image from 'next/image';
+
+const paymentMethods = [
+    { name: 'Bancolombia', logo: '/logo-bancolombia.jpg', width: 130, height: 40 },
+    { name: 'Daviplata', logo: '/logo-daviplata.jpg', width: 110, height: 40 },
+    { name: 'BBVA', logo: '/logo-bbva.png', width: 100, height: 40 },
+    { name: 'Contra Entrega', logo: '/logo-contraentrega.jpg', width: 60, height: 50 },
+];
 
 export default function Footer() {
     return (
         <footer className="bg-card border-t border-border/20 py-16 px-6">
             <div className="max-w-7xl mx-auto flex flex-col items-center text-center gap-12">
-                
+
                 {/* Redes Sociales */}
                 <div className="flex flex-col items-center gap-4">
                     <span className="text-[10px] uppercase tracking-[0.4em] text-accent mb-2">Síguenos en:</span>
-                    <a 
-                        href="https://instagram.com" 
-                        target="_blank" 
+                    <a
+                        href="https://www.instagram.com/perfumeriaparadiso/"
+                        target="_blank"
                         rel="noopener noreferrer"
-                        className="p-3 bg-background border border-border/30 rounded-full hover:border-accent hover:text-accent transition-all duration-300 group"
+                        className="transition-transform duration-300 hover:scale-110"
                     >
-                        <Instagram size={24} strokeWidth={1.5} />
+                        <svg width="40" height="40" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <radialGradient id="ig-gradient" cx="30%" cy="107%" r="150%">
+                                    <stop offset="0%" stopColor="#fdf497" />
+                                    <stop offset="5%" stopColor="#fdf497" />
+                                    <stop offset="45%" stopColor="#fd5949" />
+                                    <stop offset="60%" stopColor="#d6249f" />
+                                    <stop offset="90%" stopColor="#285AEB" />
+                                </radialGradient>
+                            </defs>
+                            <rect x="2" y="2" width="44" height="44" rx="12" fill="url(#ig-gradient)" />
+                            <rect x="6" y="6" width="36" height="36" rx="9" stroke="white" strokeWidth="3" fill="none" />
+                            <circle cx="24" cy="24" r="9" stroke="white" strokeWidth="3" fill="none" />
+                            <circle cx="35" cy="13" r="2.5" fill="white" />
+                        </svg>
                     </a>
                 </div>
 
                 {/* Métodos de Pago */}
                 <div className="flex flex-col items-center gap-8 w-full">
                     <span className="text-[10px] uppercase tracking-[0.4em] text-accent">Métodos de pago aceptados:</span>
-                    
-                    <div className="flex flex-wrap justify-center gap-6 md:gap-10 opacity-70">
-                        {/* Bancolombia */}
-                        <div className="flex flex-col items-center gap-2">
-                            <svg width="40" height="30" viewBox="0 0 100 100">
-                                <rect x="10" y="30" width="80" height="15" fill="#FDDA24" />
-                                <rect x="10" y="45" width="80" height="15" fill="#003893" />
-                                <rect x="10" y="60" width="80" height="10" fill="#CE1126" />
-                            </svg>
-                            <span className="text-[8px] uppercase tracking-widest font-bold">Bancolombia</span>
-                        </div>
 
-                        {/* Daviplata */}
-                        <div className="flex flex-col items-center gap-2">
-                            <svg width="35" height="30" viewBox="0 0 100 100">
-                                <rect rx="10" x="10" y="10" width="80" height="80" fill="#ED1C24" />
-                                <rect rx="2" x="35" y="25" width="30" height="50" fill="white" />
-                                <circle cx="50" cy="70" r="3" fill="#ED1C24" />
-                            </svg>
-                            <span className="text-[8px] uppercase tracking-widest font-bold">Daviplata</span>
-                        </div>
-
-                        {/* BBVA */}
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="h-[30px] flex items-center">
-                                <span className="text-lg font-black text-[#004481] italic tracking-tighter">BBVA</span>
+                    <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12">
+                        {paymentMethods.map((method) => (
+                            <div key={method.name} className="flex flex-col items-center gap-3 transition-opacity hover:opacity-100 opacity-80">
+                                <div className="h-[50px] flex items-center justify-center">
+                                    <Image
+                                        src={method.logo}
+                                        alt={`Logo ${method.name}`}
+                                        width={method.width}
+                                        height={method.height}
+                                        className="object-contain"
+                                    />
+                                </div>
+                                <span className="text-[8px] uppercase tracking-widest font-bold">{method.name}</span>
                             </div>
-                            <span className="text-[8px] uppercase tracking-widest font-bold">Transferencia</span>
-                        </div>
-
-                        {/* Contraentrega */}
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="h-[30px] flex items-center">
-                                <Truck size={24} strokeWidth={1.5} className="text-muted" />
-                            </div>
-                            <span className="text-[8px] uppercase tracking-widest font-bold">Contraentrega</span>
-                        </div>
+                        ))}
                     </div>
                 </div>
 
