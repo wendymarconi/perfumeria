@@ -4,7 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 
 const paymentMethods = [
-    { name: 'Bancolombia', logo: '/logo-bancolombia.jpg', width: 130, height: 40 },
+    { name: 'Nequi', logo: '/NEQUI-LOGO.jpg', width: 100, height: 40 },
     { name: 'Daviplata', logo: '/logo-daviplata.jpg', width: 110, height: 40 },
     { name: 'BBVA', logo: '/logo-bbva.png', width: 100, height: 40 },
     { name: 'Contra Entrega', logo: '/logo-contraentrega.jpg', width: 60, height: 50 },

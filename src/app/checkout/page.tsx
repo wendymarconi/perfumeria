@@ -7,6 +7,7 @@ import { createOrder, getStoreSettings } from '@/lib/actions';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, ChevronLeft, Landmark, Smartphone, CreditCard, Truck } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { formatPrice } from '@/lib/formatters';
 
 export default function CheckoutPage() {
@@ -243,15 +244,17 @@ Por favor confírmame el pedido para coordinar el pago. ¡Gracias!`;
                         <div className="mt-10 border-t border-border pt-8">
                             <h3 className="text-[10px] uppercase tracking-[0.3em] text-accent mb-6 text-center">Medios de Pago Aceptados</h3>
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-background/50 border border-border/30 p-4 flex flex-col items-center justify-center text-center gap-3 group hover:border-[#FDDA24]/50 transition-colors duration-300">
-                                    <div className="h-8 flex items-center">
-                                        <svg width="40" height="40" viewBox="0 0 100 100" className="opacity-80 group-hover:opacity-100 transition-opacity">
-                                            <rect x="10" y="30" width="80" height="15" fill="#FDDA24" />
-                                            <rect x="10" y="45" width="80" height="15" fill="#003893" />
-                                            <rect x="10" y="60" width="80" height="10" fill="#CE1126" />
-                                        </svg>
+                                <div className="bg-background/50 border border-border/30 p-4 flex flex-col items-center justify-center text-center gap-3 group hover:border-[#F50087]/50 transition-colors duration-300">
+                                    <div className="h-8 flex items-center justify-center">
+                                        <Image
+                                            src="/NEQUI-LOGO.jpg"
+                                            alt="Logo Nequi"
+                                            width={80}
+                                            height={32}
+                                            className="object-contain opacity-80 group-hover:opacity-100 transition-opacity"
+                                        />
                                     </div>
-                                    <span className="text-[9px] uppercase tracking-widest font-bold">Bancolombia</span>
+                                    <span className="text-[9px] uppercase tracking-widest font-bold">Nequi</span>
                                 </div>
                                 <div className="bg-background/50 border border-border/30 p-4 flex flex-col items-center justify-center text-center gap-3 group hover:border-[#ED1C24]/50 transition-colors duration-300">
                                     <div className="h-8 flex items-center">
