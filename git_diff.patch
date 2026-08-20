@@ -1,0 +1,90 @@
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index aa32969..6899ed4 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -22,6 +22,7 @@ model Perfume {
+   createdAt   DateTime  @default(now())
+   updatedAt   DateTime  @updatedAt
+   variants    Variant[]
++  reviews     Review[]
+ }
+ 
+ model Variant {
+@@ -91,3 +92,12 @@ model StoreSettings {
+   whatsappNumber    String   @default("573216743586")
+   updatedAt         DateTime @updatedAt
+ }
++
++model Review {
++  id        String   @id @default(cuid())
++  perfumeId String
++  rating    Int
++  comment   String?
++  createdAt DateTime @default(now())
++  perfume   Perfume  @relation(fields: [perfumeId], references: [id], onDelete: Cascade)
++}
+diff --git a/src/app/producto/[id]/page.tsx b/src/app/producto/[id]/page.tsx
+index 6a9060a..47af833 100644
+--- a/src/app/producto/[id]/page.tsx
++++ b/src/app/producto/[id]/page.tsx
+@@ -8,6 +8,7 @@ import Link from "next/link";
+ import ProductActions from "@/components/ProductActions";
+ import ProductGallery from "@/components/ProductGallery";
+ import ProductAccords from "@/components/ProductAccords";
++import StarRating from "@/components/StarRating";
+ 
+ export const dynamic = 'force-dynamic';
+ 
+@@ -28,6 +29,7 @@ export default async function ProductDetailPage({
+                         price: "asc",
+                     },
+                 },
++                reviews: true,
+             },
+         });
+     } catch (error) {
+@@ -56,7 +58,7 @@ export default async function ProductDetailPage({
+                     {/* Product Images */}
+                     <div className="flex flex-col gap-12">
+                         <div className="relative">
+-                            <ProductGallery 
++                            <ProductGallery
+                                 images={(() => {
+                                     try {
+                                         const parsed = JSON.parse(perfume.images || '[]');
+@@ -64,8 +66,8 @@ export default async function ProductDetailPage({
+                                     } catch {
+                                         return [perfume.mainImage];
+                                     }
+-                                })()} 
+-                                name={perfume.name} 
++                                })()}
++                                name={perfume.name}
+                                 category={perfume.category}
+                             />
+                         </div>
+@@ -82,8 +84,13 @@ export default async function ProductDetailPage({
+                             <span className="text-xs uppercase tracking-[0.4em] text-accent font-sans mb-4 block">
+                                 {perfume.brand}
+                             </span>
+-                            <h1 className="text-4xl md:text-6xl font-serif mb-6">{perfume.name}</h1>
+-                            <p className="text-sm uppercase tracking-widest text-muted mb-8">
++                            <h1 className="text-4xl md:text-6xl font-serif mb-2">{perfume.name}</h1>
++                            <StarRating
++                                perfumeId={perfume.id}
++                                initialRating={(perfume as any).reviews?.length > 0 ? (perfume as any).reviews.reduce((acc: number, curr: any) => acc + curr.rating, 0) / (perfume as any).reviews.length : 0}
++                                totalReviews={(perfume as any).reviews?.length || 0}
++                            />
++                            <p className="text-sm uppercase tracking-widest text-muted mb-8 mt-4">
+                                 Fragancia {perfume.gender === "Male" ? "Masculina" : perfume.gender === "Female" ? "Femenina" : "Unisex"}
+                             </p>
+                             <p className="text-lg font-sans font-light leading-relaxed text-foreground/80 mb-10">
+@@ -121,7 +128,7 @@ export default async function ProductDetailPage({
+                         </div>
+ 
+                         {/* Product Actions (Variants & Add to Cart) */}
+-                        <ProductActions product={perfume} />
++                        <ProductActions product={perfume as any} />
+ 
+                         {/* Extra Info */}
+                         <div className="mt-12 grid grid-cols-2 gap-8 border-t border-border pt-12">
