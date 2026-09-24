@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { getStoreSettings } from '@/lib/actions';
 
 const WhatsAppButton = () => {
-  const [phoneNumber, setPhoneNumber] = useState("573216743586"); // Default/Fallback
+  const [phoneNumber, setPhoneNumber] = useState("573223169659"); // Default/Fallback
   const message = "Hola, me gustaría obtener más información sobre sus perfumes.";
   
   useEffect(() => {

@@ -70,7 +70,7 @@ export default function CheckoutPage() {
             const settingsRes = await getStoreSettings();
             const phoneNumber = settingsRes.success && settingsRes.settings 
                 ? settingsRes.settings.whatsappNumber 
-                : "573216743586";
+                : "573223169659";
 
             const message = `¡Hola! Acabo de registrar un nuevo pedido en la tienda.
 

@@ -526,8 +526,13 @@ export async function getStoreSettings() {
                 data: {
                     id: 'default',
                     notificationEmail: process.env.ADMIN_EMAIL || 'admin@perfumeria.com',
-                    whatsappNumber: '573216743586'
+                    whatsappNumber: '573223169659'
                 }
+            });
+        } else if (settings.whatsappNumber === '573216743586') {
+            settings = await prisma.storeSettings.update({
+                where: { id: 'default' },
+                data: { whatsappNumber: '573223169659' }
             });
         }
 

@@ -945,7 +945,7 @@ export default function AdminPage() {
                                         value={settingsForm.whatsappNumber}
                                         onChange={(e) => setSettingsForm({ ...settingsForm, whatsappNumber: e.target.value })}
                                         className="w-full bg-background border border-border/30 p-4 text-sm focus:outline-none focus:border-accent text-foreground"
-                                        placeholder="573216743586"
+                                        placeholder="573223169659"
                                     />
                                 </div>
                             </div>

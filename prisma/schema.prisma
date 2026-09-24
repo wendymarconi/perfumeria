@@ -89,7 +89,7 @@ model HomeCarousel {
 model StoreSettings {
   id                String   @id @default("default")
   notificationEmail String   @default("admin@perfumeria.com")
-  whatsappNumber    String   @default("573216743586")
+  whatsappNumber    String   @default("573223169659")
   updatedAt         DateTime @updatedAt
 }
 
