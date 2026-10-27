@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getCarouselImages } from "@/lib/actions";
 import FadeIn from "@/components/FadeIn";
 import Footer from "@/components/Footer";
+import TestimonialsSection from "@/components/TestimonialsSection";
 
 export const dynamic = 'force-dynamic';
 
@@ -74,6 +75,9 @@ export default async function Home() {
             </div>
           </section>
         </FadeIn>
+
+        {/* Seccion de Testimonios y Comentarios de Clientes */}
+        <TestimonialsSection />
       </main>
 
       <Footer />

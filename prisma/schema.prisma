@@ -95,9 +95,10 @@ model StoreSettings {
 
 model Review {
   id        String   @id @default(cuid())
-  perfumeId String
+  perfumeId String?
+  userName  String?  @default("Cliente Verificado")
   rating    Int
   comment   String?
   createdAt DateTime @default(now())
-  perfume   Perfume  @relation(fields: [perfumeId], references: [id], onDelete: Cascade)
+  perfume   Perfume? @relation(fields: [perfumeId], references: [id], onDelete: Cascade)
 }

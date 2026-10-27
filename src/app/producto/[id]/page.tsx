@@ -9,6 +9,7 @@ import ProductActions from "@/components/ProductActions";
 import ProductGallery from "@/components/ProductGallery";
 import ProductAccords from "@/components/ProductAccords";
 import StarRating from "@/components/StarRating";
+import ProductReviews from "@/components/ProductReviews";
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +30,11 @@ export default async function ProductDetailPage({
                         price: "asc",
                     },
                 },
-                reviews: true,
+                reviews: {
+                    orderBy: {
+                        createdAt: "desc",
+                    },
+                },
             },
         });
     } catch (error) {
@@ -149,6 +154,12 @@ export default async function ProductDetailPage({
                         </div>
                     </div>
                 </div>
+
+                {/* Seccion de Reseñas y Comentarios de Clientes */}
+                <ProductReviews 
+                    perfumeId={perfume.id} 
+                    initialReviews={(perfume as any).reviews || []} 
+                />
             </main>
         </div>
     );
